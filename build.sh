@@ -1,5 +1,4 @@
-#!/bin/bash
-# not the best way to go, but it will do for now
+#!/bin/sh
 
 # cleans previous build
 rm -rf build
@@ -14,7 +13,7 @@ for project in $(ls src); do
     # and for each profile in the project directory
     for profile in $(ls src/$project); do
       # concat the base file with the specific one to form an standalone script
-      cp src/bashible.sh build/$project/$profile
+      cp src/idem.sh build/$project/$profile
       cat src/$project/$profile >> build/$project/$profile
     done
   fi
