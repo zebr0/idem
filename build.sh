@@ -7,7 +7,7 @@ rm -rf build
 for project in $(ls src); do
   if [ -d src/$project ]; then
 
-    # creates a corresponding directory in build
+    # creates a corresponding directory in build/
     mkdir -p build/$project
 
     # and for each profile in the project directory
