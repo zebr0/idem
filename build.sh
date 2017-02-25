@@ -1,7 +1,8 @@
 #!/bin/sh
+set -ex
 
 # cleans previous build
-rm -rf build
+rm -rf build/
 
 # for each project in src/
 for project in $(ls src); do
@@ -18,3 +19,20 @@ for project in $(ls src); do
     done
   fi
 done
+
+# tests
+# cleans previous failed test run if exists
+rm -rf test/
+mkdir test
+
+# first run
+cat build/common/test.sh | IDEM_DIR=./test sh > test/result_1
+cmp test/result_1 resources/test_stdout_1
+cmp test/fe55a42ae7273e7639b20454362c85ab resources/test_md5
+
+# second run
+cat build/common/test.sh | IDEM_DIR=./test sh > test/result_2
+cmp test/result_2 resources/test_stdout_2
+
+# cleans successful test run
+rm -rf test/
