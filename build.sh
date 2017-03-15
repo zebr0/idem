@@ -13,7 +13,7 @@ for project in $(ls src); do
 
     # and for each profile in the project directory
     for profile in $(ls src/$project); do
-      # concat the base file with the specific one to form an standalone script
+      # concat the base file with the specific one to form a standalone script
       cp src/idem.sh build/$project/$profile
       cat src/$project/$profile >> build/$project/$profile
     done
