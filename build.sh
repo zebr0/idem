@@ -13,9 +13,12 @@ for project in $(ls src); do
 
     # and for each profile in the project directory
     for profile in $(ls src/$project); do
-      # concat the base file with the specific one to form a standalone script
-      cp src/idem.sh build/$project/$profile
-      cat src/$project/$profile >> build/$project/$profile
+      # concat the base files with the specific one to form a standalone script
+      dest=build/$project/$profile
+      cp src/header.sh $dest
+      cat src/idem.sh >> $dest
+      cat src/footer.sh >> $dest
+      cat src/$project/$profile >> $dest
     done
   fi
 done
