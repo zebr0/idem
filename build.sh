@@ -29,12 +29,12 @@ rm -rf test/
 mkdir test
 
 # first run
-cat build/common/test.sh | IDEM_DIR=./test sh > test/result_1
+cat build/common/test.sh | sh > test/result_1
 cmp test/result_1 resources/common/test_stdout_1
 cmp test/fe55a42ae7273e7639b20454362c85ab resources/common/test_md5
 
 # second run
-cat build/common/test.sh | IDEM_DIR=./test sh > test/result_2
+cat build/common/test.sh | sh > test/result_2
 cmp test/result_2 resources/common/test_stdout_2
 
 # cleans successful test run
