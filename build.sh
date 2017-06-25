@@ -29,13 +29,13 @@ rm -rf test/
 mkdir test
 
 # first run
-cat build/common/test.sh | sh > test/result_1
-cmp test/result_1 resources/common/test_stdout_1
-cmp test/fe55a42ae7273e7639b20454362c85ab resources/common/test_md5
+cat build/test/test.sh | sh > test/result_1
+cmp test/result_1 resources/test/stdout_1
+cmp test/fe55a42ae7273e7639b20454362c85ab resources/test/md5
 
 # second run
-cat build/common/test.sh | sh > test/result_2
-cmp test/result_2 resources/common/test_stdout_2
+cat build/test/test.sh | sh > test/result_2
+cmp test/result_2 resources/test/stdout_2
 
 # cleans successful test run
 rm -rf test/
