@@ -1,5 +1,4 @@
-#!/bin/sh
-set -ex
+#!/bin/sh -ex
 
 # cleans previous build
 rm -rf build/
