@@ -19,7 +19,7 @@ def strformat(time):
 
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip()
+        print(f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip())
 
 
 if __name__ == '__main__':
