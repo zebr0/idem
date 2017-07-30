@@ -1,6 +1,7 @@
 import argparse
-import os.path
 import datetime
+import os.path
+import urllib2
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 
@@ -22,8 +23,14 @@ def show_log(args):
         print(f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip())
 
 
+def get_commands(args):
+    return map(lambda l: l.strip(),
+               urllib2.urlopen("https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh"
+                               .format(args.version, args.script)).readlines())
+
+
 def dryrun_script(args):
-    print("https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(args.version, args.script))
+    print(get_commands(args))
 
 
 if __name__ == '__main__':
