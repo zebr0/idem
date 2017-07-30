@@ -1,21 +1,19 @@
 import argparse
 import datetime
+import hashlib
 import os.path
 import urllib2
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 
 
-def full_path(f):
-    return os.path.join(idem_path, f)
+def full_path(f): return os.path.join(idem_path, f)
 
 
-def mtime(f):
-    return os.path.getmtime(full_path(f))
+def mtime(f): return os.path.getmtime(full_path(f))
 
 
-def strformat(time):
-    return datetime.datetime.fromtimestamp(time).strftime("%c")
+def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 
 def show_log(args):
@@ -23,14 +21,14 @@ def show_log(args):
         print(f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip())
 
 
-def get_commands(args):
-    return map(lambda l: l.strip(),
-               urllib2.urlopen("https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh"
-                               .format(args.version, args.script)).readlines())
+def get_hashed_commands(args):
+    url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(args.version, args.script)
+    commands = urllib2.urlopen(url).read().splitlines()
+    return map(lambda c: dict(command=c, hash=hashlib.md5(c).hexdigest()), commands)
 
 
 def dryrun_script(args):
-    print(get_commands(args))
+    print(get_hashed_commands(args))
 
 
 if __name__ == '__main__':
