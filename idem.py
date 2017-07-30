@@ -22,6 +22,10 @@ def show_log(args):
         print(f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip())
 
 
+def dryrun_script(args):
+    print("https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(args.version, args.script))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Ultra-lightweight Python framework for idempotent local provisioning.")
@@ -29,6 +33,11 @@ if __name__ == '__main__':
 
     parser_log = subparsers.add_parser("log")  # TODO : help message
     parser_log.set_defaults(func=show_log)
+
+    parser_dryrun = subparsers.add_parser("dryrun")
+    parser_dryrun.add_argument("script", nargs="?")
+    parser_dryrun.add_argument("version", nargs="?", default="master")
+    parser_dryrun.set_defaults(func=dryrun_script)
 
     args = parser.parse_args()
     args.func(args)
