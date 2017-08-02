@@ -4,6 +4,13 @@ import hashlib
 import os.path
 import urllib2
 
+
+class Command:
+    def __init__(self, command):
+        self.command = command
+        self.hash = hashlib.md5(command).hexdigest()
+
+
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 
 
@@ -24,11 +31,12 @@ def show_log(args):
 def get_hashed_commands(args):
     url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(args.version, args.script)
     commands = urllib2.urlopen(url).read().splitlines()
-    return map(lambda c: dict(command=c, hash=hashlib.md5(c).hexdigest()), commands)
+    return map(lambda c: Command(c), commands)
 
 
 def dryrun_script(args):
-    print(get_hashed_commands(args))
+    for c in get_hashed_commands(args):
+        print(c.command + (" OK" if os.path.isfile(full_path(c.hash)) else " TODO"))
 
 
 if __name__ == '__main__':
