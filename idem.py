@@ -9,6 +9,10 @@ class Command:
     def __init__(self, command):
         self.command = command
         self.hash = hashlib.md5(command).hexdigest()
+        self.todo = not os.path.isfile(full_path(self.hash))
+
+    def dryrun(self):
+        print(("TODO" if self.todo else "    ") + "  " + self.command)
 
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
@@ -36,7 +40,7 @@ def get_hashed_commands(args):
 
 def dryrun_script(args):
     for c in get_hashed_commands(args):
-        print(c.command + (" OK" if os.path.isfile(full_path(c.hash)) else " TODO"))
+        c.dryrun()
 
 
 if __name__ == '__main__':
