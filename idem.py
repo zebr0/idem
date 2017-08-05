@@ -61,7 +61,12 @@ def show_log(args):
         print green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
 
 
-def download_commands(version, script):
+def download_commands(script, version, recursionsafe=set()):
+    if script in recursionsafe:
+        raise Exception
+    else:
+        recursionsafe.add(script)
+
     url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(version, script)
     commands = []
 
@@ -69,24 +74,20 @@ def download_commands(version, script):
         if command.startswith("#"):
             split = command.rsplit()
             if split[1] == "include":
-                commands.extend(download_commands(version, split[2]))
+                commands.extend(download_commands(split[2], version, recursionsafe))
         else:
-            commands.append(command)
+            commands.append(Command(command))
 
     return commands
 
 
-def get_commands(args):
-    return map(lambda c: Command(c), download_commands(args.version, args.script))
-
-
 def dryrun_script(args):
-    for c in get_commands(args):
+    for c in download_commands(args.script, args.version):
         c.dryrun()
 
 
 def run_script(args):
-    for c in get_commands(args):
+    for c in download_commands(args.script, args.version):
         c.run()
 
 
