@@ -63,7 +63,16 @@ def show_log(args):
 
 def download_commands(version, script):
     url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(version, script)
-    commands = urllib2.urlopen(url).read().splitlines()
+    commands = []
+
+    for command in urllib2.urlopen(url).read().splitlines():
+        if command.startswith("#"):
+            split = command.rsplit()
+            if split[1] == "include":
+                commands.extend(download_commands(version, split[2]))
+        else:
+            commands.append(command)
+
     return commands
 
 
