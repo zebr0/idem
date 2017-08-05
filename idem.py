@@ -6,7 +6,7 @@ import subprocess
 import urllib2
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
-always = ["apt-get update"]
+always_run = ["apt-get update"]
 
 
 def full_path(f): return os.path.join(idem_path, f)
@@ -24,20 +24,18 @@ def blue(string): return '\033[94m' + string + '\033[0m'
 def green(string): return '\033[92m' + string + '\033[0m'
 
 
-def is_always(command): return any(map(lambda a: a in command, always))
-
-
 class Command:
     def __init__(self, command):
         self.command = command
         self.hash = hashlib.md5(command).hexdigest()
         self.todo = not os.path.isfile(full_path(self.hash))
+        self.always_run = any(filter(lambda a: a in self.command, always_run))
 
     def dryrun(self):
-        print (blue("todo") if self.todo else green("done")) + " " + self.command
+        print (blue("alwa") if self.always_run else blue("todo") if self.todo else green("done")) + " " + self.command
 
     def run(self):
-        if self.todo:
+        if self.always_run or self.todo:
             print blue("executing ") + self.command
 
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -46,7 +44,7 @@ class Command:
             sp.wait()
 
             if sp.returncode == 0:
-                if not is_always(self.command):
+                if not self.always_run:
                     f = open(full_path(self.hash), "w")
                     f.writelines(self.command)
                     f.close()
