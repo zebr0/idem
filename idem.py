@@ -5,13 +5,22 @@ import os.path
 import subprocess
 import urllib2
 
-
-def blue(string):
-    return '\033[94m' + string + '\033[0m'
+idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 
 
-def green(string):
-    return '\033[92m' + string + '\033[0m'
+def full_path(f): return os.path.join(idem_path, f)
+
+
+def mtime(f): return os.path.getmtime(full_path(f))
+
+
+def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
+
+
+def blue(string): return '\033[94m' + string + '\033[0m'
+
+
+def green(string): return '\033[92m' + string + '\033[0m'
 
 
 class Command:
@@ -41,18 +50,6 @@ class Command:
                 raise Exception
         else:
             print green("skipping ") + self.command
-
-
-idem_path = os.path.join(os.path.expanduser("~"), ".idem")
-
-
-def full_path(f): return os.path.join(idem_path, f)
-
-
-def mtime(f): return os.path.getmtime(full_path(f))
-
-
-def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 
 def show_log(args):
