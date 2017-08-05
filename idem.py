@@ -6,6 +6,7 @@ import subprocess
 import urllib2
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
+always = ["apt-get update"]
 
 
 def full_path(f): return os.path.join(idem_path, f)
@@ -21,6 +22,9 @@ def blue(string): return '\033[94m' + string + '\033[0m'
 
 
 def green(string): return '\033[92m' + string + '\033[0m'
+
+
+def is_always(command): return any(map(lambda a: a in command, always))
 
 
 class Command:
@@ -42,9 +46,10 @@ class Command:
             sp.wait()
 
             if sp.returncode == 0:
-                f = open(full_path(self.hash), "w")
-                f.writelines(self.command)
-                f.close()
+                if not is_always(self.command):
+                    f = open(full_path(self.hash), "w")
+                    f.writelines(self.command)
+                    f.close()
                 print green("done")
             else:
                 raise Exception
