@@ -2,6 +2,7 @@ import argparse
 import datetime
 import hashlib
 import os.path
+import subprocess
 import urllib2
 
 
@@ -13,6 +14,15 @@ class Command:
 
     def dryrun(self):
         print(("TODO" if self.todo else "    ") + "  " + self.command)
+
+    def run(self):
+        print("executing: " + self.command)
+
+        sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        for line in iter(sp.stdout.readline, b''):
+            print("  " + line.strip())
+
+        print("done")
 
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
@@ -43,6 +53,11 @@ def dryrun_script(args):
         c.dryrun()
 
 
+def run_script(args):
+    for c in get_hashed_commands(args):
+        c.run()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Ultra-lightweight Python framework for idempotent local provisioning.")
@@ -55,6 +70,11 @@ if __name__ == '__main__':
     parser_dryrun.add_argument("script", nargs="?")
     parser_dryrun.add_argument("version", nargs="?", default="master")
     parser_dryrun.set_defaults(func=dryrun_script)
+
+    parser_run = subparsers.add_parser("run")
+    parser_run.add_argument("script", nargs="?")
+    parser_run.add_argument("version", nargs="?", default="master")
+    parser_run.set_defaults(func=run_script)
 
     args = parser.parse_args()
     args.func(args)
