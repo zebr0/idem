@@ -6,6 +6,14 @@ import subprocess
 import urllib2
 
 
+def blue(string):
+    return '\033[94m' + string + '\033[0m'
+
+
+def green(string):
+    return '\033[92m' + string + '\033[0m'
+
+
 class Command:
     def __init__(self, command):
         self.command = command
@@ -13,26 +21,26 @@ class Command:
         self.todo = not os.path.isfile(full_path(self.hash))
 
     def dryrun(self):
-        print ("todo" if self.todo else "    ") + "  " + self.command
+        print (blue("todo") if self.todo else green("done")) + " " + self.command
 
     def run(self):
         if self.todo:
-            print "executing: " + self.command
+            print blue("executing ") + self.command
 
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in iter(sp.stdout.readline, b''):
-                print "  " + line.strip()
+                print " " + line.strip()
             sp.wait()
 
             if sp.returncode == 0:
                 f = open(full_path(self.hash), "w")
                 f.writelines(self.command)
                 f.close()
-                print "done"
+                print green("done")
             else:
                 raise Exception
         else:
-            print "skipping: " + self.command
+            print green("skipping ") + self.command
 
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
@@ -49,7 +57,7 @@ def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip()
+        print green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
 
 
 def get_hashed_commands(args):
