@@ -61,19 +61,23 @@ def show_log(args):
         print green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
 
 
-def get_hashed_commands(args):
-    url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(args.version, args.script)
+def download_commands(version, script):
+    url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(version, script)
     commands = urllib2.urlopen(url).read().splitlines()
-    return map(lambda c: Command(c), commands)
+    return commands
+
+
+def get_commands(args):
+    return map(lambda c: Command(c), download_commands(args.version, args.script))
 
 
 def dryrun_script(args):
-    for c in get_hashed_commands(args):
+    for c in get_commands(args):
         c.dryrun()
 
 
 def run_script(args):
-    for c in get_hashed_commands(args):
+    for c in get_commands(args):
         c.run()
 
 
