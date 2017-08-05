@@ -32,7 +32,8 @@ class Command:
         self.always_run = any(filter(lambda a: a in self.command, always_run))
 
     def dryrun(self):
-        print (blue("alwa") if self.always_run else blue("todo") if self.todo else green("done")) + " " + self.command
+        print (blue("always") if self.always_run else blue("  todo") if self.todo else green("  done")) \
+              + " " + self.command
 
     def run(self):
         if self.always_run or self.todo:
