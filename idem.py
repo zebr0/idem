@@ -13,16 +13,26 @@ class Command:
         self.todo = not os.path.isfile(full_path(self.hash))
 
     def dryrun(self):
-        print(("TODO" if self.todo else "    ") + "  " + self.command)
+        print ("todo" if self.todo else "    ") + "  " + self.command
 
     def run(self):
-        print("executing: " + self.command)
+        if self.todo:
+            print "executing: " + self.command
 
-        sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        for line in iter(sp.stdout.readline, b''):
-            print("  " + line.strip())
+            sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            for line in iter(sp.stdout.readline, b''):
+                print "  " + line.strip()
+            sp.wait()
 
-        print("done")
+            if sp.returncode == 0:
+                f = open(full_path(self.hash), "w")
+                f.writelines(self.command)
+                f.close()
+                print "done"
+            else:
+                raise Exception
+        else:
+            print "skipping: " + self.command
 
 
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
@@ -39,7 +49,7 @@ def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print(f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip())
+        print f + "  " + strformat(mtime(f)) + "  " + open(full_path(f)).read().strip()
 
 
 def get_hashed_commands(args):
@@ -59,6 +69,9 @@ def run_script(args):
 
 
 if __name__ == '__main__':
+    if not os.path.isdir(idem_path):
+        os.makedirs(idem_path)
+
     parser = argparse.ArgumentParser(
         description="Ultra-lightweight Python framework for idempotent local provisioning.")
     subparsers = parser.add_subparsers()
