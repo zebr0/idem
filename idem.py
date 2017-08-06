@@ -67,7 +67,7 @@ def download_commands(script, version, recursionsafe=set()):
     else:
         recursionsafe.add(script)
 
-    url = "https://raw.githubusercontent.com/mazerty/idem/{0}/script/{1}.sh".format(version, script)
+    url = "https://raw.githubusercontent.com/mazerty/idem/{0}/scripts/{1}.sh".format(version, script)
     commands = []
 
     for command in urllib2.urlopen(url).read().splitlines():
