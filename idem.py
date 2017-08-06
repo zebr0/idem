@@ -81,14 +81,9 @@ def download_commands(script, version, recursionsafe=set()):
     return commands
 
 
-def dryrun_script(args):
-    for c in download_commands(args.script, args.version):
-        c.dryrun()
-
-
 def run_script(args):
     for c in download_commands(args.script, args.version):
-        c.run()
+        c.dryrun() if args.dry else c.run()
 
 
 if __name__ == '__main__':
@@ -102,14 +97,10 @@ if __name__ == '__main__':
     parser_log = subparsers.add_parser("log")  # TODO : help message
     parser_log.set_defaults(func=show_log)
 
-    parser_dryrun = subparsers.add_parser("dryrun")
-    parser_dryrun.add_argument("script", nargs="?")
-    parser_dryrun.add_argument("version", nargs="?", default="master")
-    parser_dryrun.set_defaults(func=dryrun_script)
-
     parser_run = subparsers.add_parser("run")
     parser_run.add_argument("script", nargs="?")
     parser_run.add_argument("version", nargs="?", default="master")
+    parser_run.add_argument("--dry", action="store_true")
     parser_run.set_defaults(func=run_script)
 
     args = parser.parse_args()
