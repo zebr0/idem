@@ -24,6 +24,9 @@ def blue(string): return '\033[94m' + string + '\033[0m'
 def green(string): return '\033[92m' + string + '\033[0m'
 
 
+def red(string): return '\033[91m' + string + '\033[0m'
+
+
 class Command:
     def __init__(self, command):
         self.command = command
@@ -51,7 +54,7 @@ class Command:
                     f.close()
                 print green("done")
             else:
-                raise Exception
+                print red("error")
         else:
             print green("skipping ") + self.command
 
@@ -63,7 +66,7 @@ def show_log(args):
 
 def download_commands(script, version, recursionsafe=set()):
     if script in recursionsafe:
-        raise Exception
+        raise Exception("Infinite recursion detected in script inclusion : {0}".format(script))
     else:
         recursionsafe.add(script)
 
