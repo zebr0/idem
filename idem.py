@@ -66,7 +66,7 @@ def show_log(args):
 
 def download_commands(script, version, recursionsafe=set()):
     if script in recursionsafe:
-        raise Exception("Infinite recursion detected in script inclusion : {0}".format(script))
+        raise Exception("Infinite recursion detected in script inclusion : " + script)
     else:
         recursionsafe.add(script)
 
@@ -78,6 +78,10 @@ def download_commands(script, version, recursionsafe=set()):
             split = command.rsplit()
             if split[1] == "include":
                 commands.extend(download_commands(split[2], version, recursionsafe))
+            elif split[1] == "resource":
+                commands.append(Command(
+                    "cd /tmp && wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2}".format(
+                        version, script, split[2])))
         else:
             commands.append(Command(command))
 
