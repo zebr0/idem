@@ -82,6 +82,12 @@ def download_commands(script, version, recursionsafe=set()):
                 commands.append(Command(
                     "cd /tmp && wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2}".format(
                         version, script, split[2])))
+            elif split[1] == "path":
+                global idem_path
+                idem_path = split[2]
+            elif split[1] == "always":
+                global always_run
+                always_run.add(split[2])
         else:
             commands.append(Command(command))
 
