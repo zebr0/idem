@@ -5,50 +5,66 @@ import os.path
 import subprocess
 import urllib2
 
+# path where the idem files will be stored, can be overriden with the "path" directive
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
+
+# list of commands that will always be run (no idem file will be created for them)
 always_run = ["apt-get update"]
 
 
+# gets the full path of an idem file
 def full_path(f): return os.path.join(idem_path, f)
 
 
+# gets the mtime of an idem file
 def mtime(f): return os.path.getmtime(full_path(f))
 
 
+# formats given time in a human-readable way
 def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 
+# turns given text in blue
 def blue(string): return '\033[94m' + string + '\033[0m'
 
 
+# turns given text in green
 def green(string): return '\033[92m' + string + '\033[0m'
 
 
+# turns given text in red
 def red(string): return '\033[91m' + string + '\033[0m'
 
 
+# represents a command about to be executed
 class Command:
     def __init__(self, command):
-        self.command = command
-        self.hash = hashlib.md5(command).hexdigest()
-        self.todo = not os.path.isfile(full_path(self.hash))
-        self.always_run = any(filter(lambda a: a in self.command, always_run))
+        self.command = command  # the command itself
+        self.hash = hashlib.md5(command).hexdigest()  # its md5 hash
+        self.todo = not os.path.isfile(full_path(self.hash))  # has the command never been run before ?
+        self.always_run = any(filter(lambda a: a in self.command, always_run))  # is it always supposed to be run ?
 
+    # prints the command's status, whether it will be executed or not
     def dryrun(self):
         print (blue("always") if self.always_run else blue("  todo") if self.todo else green("  done")) \
               + " " + self.command
 
+    # executes the command if it hasn't been executed yet
     def run(self):
         if self.always_run or self.todo:
             print blue("executing ") + self.command
 
+            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in iter(sp.stdout.readline, b''):
                 print " " + line.strip()
             sp.wait()
 
+            # if the run is successful...
             if sp.returncode == 0:
+                # and the command only has to be run once...
                 if not self.always_run:
+                    # then creates an idem file to mark and log the command's execution
                     f = open(full_path(self.hash), "w")
                     f.writelines(self.command)
                     f.close()
@@ -59,46 +75,56 @@ class Command:
             print green("skipping ") + self.command
 
 
+# main function: prints a history of all idem executed commands
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
+        print blue(f) + " " + green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
 
 
+# downloads the commands of a given script in a given version
+# with the "include" directive, can do so recursively
 def download_commands(script, version, recursionsafe=set()):
+    # to prevent infinite recursion, we store each script name into a set and test each new script against the set
     if script in recursionsafe:
         raise Exception("Infinite recursion detected in script inclusion : " + script)
     else:
         recursionsafe.add(script)
 
+    # builds the script url and initializes the resulting Commands' list
     url = "https://raw.githubusercontent.com/mazerty/idem/{0}/scripts/{1}.sh".format(version, script)
     commands = []
 
-    for command in urllib2.urlopen(url).read().splitlines():
-        if command.startswith("#"):
-            split = command.rsplit()
+    # downloads the script and loop through each line
+    for line in urllib2.urlopen(url).read().splitlines():
+        # if the line is a comment, it may be a directive, so we analyze its words
+        if line.startswith("#"):
+            split = line.rsplit()
+
             if split[1] == "include":
+                # include directive: recursively downloads the given script's commands and adds them to the list
                 commands.extend(download_commands(split[2], version, recursionsafe))
             elif split[1] == "resource":
+                # resource directive: appends a command that downloads the given file into the /tmp directory
                 commands.append(Command(
                     "cd /tmp && wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2}".format(
                         version, script, split[2])))
             elif split[1] == "path":
+                # path directive: override idem's default path (useful in some cases such as docker volumes)
                 global idem_path
                 idem_path = split[2]
-            elif split[1] == "always":
-                global always_run
-                always_run.add(split[2])
-        else:
-            commands.append(Command(command))
+        else:  # it's a standard shell command, appends it to the end of the list
+            commands.append(Command(line))
 
     return commands
 
 
+# main function: downloads then runs or tests a given script in a given version
 def run_script(args):
     for c in download_commands(args.script, args.version):
         c.dryrun() if args.dry else c.run()
 
 
+# entrypoint
 if __name__ == '__main__':
     if not os.path.isdir(idem_path):
         os.makedirs(idem_path)
