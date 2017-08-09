@@ -120,26 +120,30 @@ def download_commands(script, version, recursionsafe=set()):
 
 # main function: downloads then runs or tests a given script in a given version
 def run_script(args):
-    for c in download_commands(args.script, args.version):
+    commands = download_commands(args.script, args.version)
+
+    # as downloading the commands may have changed the idem path, only now do we ensure that it exists
+    if not os.path.isdir(idem_path):
+        os.makedirs(idem_path)
+
+    for c in commands:
         c.dryrun() if args.dry else c.run()
 
 
 # entrypoint
 if __name__ == '__main__':
-    if not os.path.isdir(idem_path):
-        os.makedirs(idem_path)
-
+    # argumentparser : the best way to handle program arguments in python
     parser = argparse.ArgumentParser(
-        description="Ultra-lightweight Python framework for idempotent local provisioning.")
+        description="Lightweight Python-Shell framework for idempotent local provisioning.")
     subparsers = parser.add_subparsers()
 
-    parser_log = subparsers.add_parser("log")  # TODO : help message
+    parser_log = subparsers.add_parser("log", help="prints a history of all idem.py executed commands")
     parser_log.set_defaults(func=show_log)
 
-    parser_run = subparsers.add_parser("run")
-    parser_run.add_argument("script", nargs="?")
-    parser_run.add_argument("version", nargs="?", default="master")
-    parser_run.add_argument("--dry", action="store_true")
+    parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script in a given version")
+    parser_run.add_argument("script", nargs="?", help="script identifier in the repository")
+    parser_run.add_argument("version", nargs="?", default="master", help="repository branch or tag (default: master)")
+    parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
     parser_run.set_defaults(func=run_script)
 
     args = parser.parse_args()
