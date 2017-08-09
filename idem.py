@@ -1,3 +1,5 @@
+#!/usr/bin/python -u
+
 import argparse
 import datetime
 import hashlib
