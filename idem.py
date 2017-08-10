@@ -65,7 +65,7 @@ class Command:
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in iter(sp.stdout.readline, b''):
-                print " " + line.strip()
+                print line.strip()
             sp.wait()
 
             # if the run is successful...
@@ -73,13 +73,12 @@ class Command:
                 # and the command only has to be run once...
                 if not self.always_run:
                     # then creates an idem file to mark and log the command's execution
-                    f = open(full_path(self.hash), "w")
-                    f.writelines(self.command)
-                    f.close()
+                    with open(full_path(self.hash), "w") as f:
+                        f.writelines(self.command)
                 print green("done")
             else:
                 print red("error")
-                raise Exception
+                exit(1)
         else:
             print green("skipping ") + self.command
 
