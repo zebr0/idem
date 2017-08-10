@@ -79,6 +79,7 @@ class Command:
                 print green("done")
             else:
                 print red("error")
+                raise Exception
         else:
             print green("skipping ") + self.command
 
