@@ -98,8 +98,8 @@ def download_commands(script, version, recursionsafe=set()):
 
     # downloads the script and loop through each line
     for line in urllib2.urlopen(url).read().splitlines():
-        # if the line is a comment, it may be a directive, so we analyze its words
-        if line.startswith("#"):
+        # if the line begins with ##, it may be a directive, so we analyze its words
+        if line.startswith("##"):
             split = line.rsplit()
 
             if split[1] == "include":
@@ -114,7 +114,8 @@ def download_commands(script, version, recursionsafe=set()):
                 # path directive: override idem's default path (useful in some cases such as docker volumes)
                 global idem_path
                 idem_path = split[2]
-        else:  # it's a standard shell command, appends it to the end of the list
+        elif not line.startswith("#") and not line == "":
+            # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
 
     return commands
