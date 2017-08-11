@@ -65,7 +65,7 @@ class Command:
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in iter(sp.stdout.readline, b''):
-                print line.strip()
+                print line,
             sp.wait()
 
             # if the run is successful...
