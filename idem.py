@@ -5,6 +5,7 @@ import datetime
 import hashlib
 import os.path
 import subprocess
+import sys
 import urllib2
 
 # path where the idem files will be stored, can be overriden with the "path" directive
@@ -58,14 +59,28 @@ class Command:
               + " " + self.command
 
     # executes the command if it hasn't been executed yet
-    def run(self):
+    # in "step" mode, asks confirmation before running each step
+    def run(self, step):
         if self.always_run or self.todo:
-            print blue("executing ") + self.command
+            if step:
+                print "next: " + self.command + os.linesep + "(e)xecute, (s)kip or (a)bort ?"
+
+                choice = sys.stdin.readline().strip()
+                if choice == "e":
+                    print blue("executing")
+                elif choice == "s":
+                    print green("skipped")
+                    return
+                else:
+                    print red("aborting")
+                    exit(0)
+            else:
+                print blue("executing ") + self.command
 
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             for line in iter(sp.stdout.readline, b''):
-                print line,
+                print " " + line,
             sp.wait()
 
             # if the run is successful...
@@ -86,7 +101,7 @@ class Command:
 # main function: prints a history of all idem executed commands
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print blue(f) + " " + green(strformat(mtime(f))) + " " + open(full_path(f)).read().strip()
+        print blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip()
 
 
 # downloads the commands of a given script in a given version
@@ -131,7 +146,7 @@ def download_commands(script, version, recursionsafe=set()):
 # main function: downloads then runs or tests a given script in a given version
 def run_script(args):
     for c in download_commands(args.script, args.version):
-        c.dryrun() if args.dry else c.run()
+        c.dryrun() if args.dry else c.run(args.step)
 
 
 # entrypoint
@@ -150,6 +165,7 @@ if __name__ == '__main__':
     parser_run.add_argument("script", nargs="?", help="script identifier in the repository")
     parser_run.add_argument("version", nargs="?", default="master", help="repository branch or tag (default: master)")
     parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
+    parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
     parser_run.set_defaults(func=run_script)
 
     args = parser.parse_args()
