@@ -63,7 +63,8 @@ class Command:
     def run(self, step):
         if self.always_run or self.todo:
             if step:
-                print "next: " + self.command + os.linesep + "(e)xecute, (s)kip or (a)bort ?"
+                print blue("next:"), self.command
+                print blue("(e)xecute"), green("(s)kip"), red("(a)bort ?")
 
                 choice = sys.stdin.readline().strip()
                 if choice == "e":
