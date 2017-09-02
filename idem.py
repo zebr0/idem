@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import hashlib
+import io
 import os.path
 import subprocess
 import sys
@@ -78,10 +79,9 @@ class Command:
                 print(blue("executing"), self.command)
 
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
-                                  universal_newlines=True)
-            for line in sp.stdout:
-                print(" " + line, end='')
+            sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            for line in io.TextIOWrapper(sp.stdout, newline="\n"):
+                print(" " + line, end="")
             sp.wait()
 
             # if the run is successful...
