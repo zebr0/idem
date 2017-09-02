@@ -1,4 +1,4 @@
-#!/usr/bin/python -u
+#!/usr/bin/python3 -u
 
 import argparse
 import datetime
@@ -6,7 +6,7 @@ import hashlib
 import os.path
 import subprocess
 import sys
-import urllib2
+import urllib.request
 
 # path where the idem files will be stored, can be overriden with the "path" directive
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
@@ -49,39 +49,39 @@ def red(string): return '\033[91m' + string + '\033[0m'
 class Command:
     def __init__(self, command):
         self.command = command  # the command itself
-        self.hash = hashlib.md5(command).hexdigest()  # its md5 hash
+        self.hash = hashlib.md5(command.encode("ascii")).hexdigest()  # its md5 hash
         self.todo = not os.path.isfile(full_path(self.hash))  # has the command never been run before ?
         self.always_run = any(filter(lambda a: a in self.command, always_run))  # is it always supposed to be run ?
 
     # prints the command's status, whether it will be executed or not
     def dryrun(self):
-        print (blue("always") if self.always_run else blue("  todo") if self.todo else green("  done")) \
-              + " " + self.command
+        print((blue("always") if self.always_run else blue("  todo") if self.todo else green("  done")), self.command)
 
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
     def run(self, step):
         if self.always_run or self.todo:
             if step:
-                print blue("next:"), self.command
-                print blue("(e)xecute"), green("(s)kip"), red("(a)bort ?")
+                print(blue("next:"), self.command)
+                print(blue("(e)xecute"), green("(s)kip"), red("(a)bort ?"))
 
                 choice = sys.stdin.readline().strip()
                 if choice == "e":
-                    print blue("executing")
+                    print(blue("executing"))
                 elif choice == "s":
-                    print green("skipped")
+                    print(green("skipped"))
                     return
                 else:
-                    print red("aborting")
+                    print(red("aborting"))
                     exit(0)
             else:
-                print blue("executing ") + self.command
+                print(blue("executing"), self.command)
 
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            for line in iter(sp.stdout.readline, b''):
-                print " " + line,
+            sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
+                                  universal_newlines=True)
+            for line in sp.stdout:
+                print(" " + line, end='')
             sp.wait()
 
             # if the run is successful...
@@ -91,18 +91,18 @@ class Command:
                     # then creates an idem file to mark and log the command's execution
                     with open(full_path(self.hash), "w") as f:
                         f.writelines(self.command)
-                print green("done")
+                print(green("done"))
             else:
-                print red("error")
+                print(red("error"))
                 exit(1)
         else:
-            print green("skipping ") + self.command
+            print(green("skipping"), self.command)
 
 
 # main function: prints a history of all idem executed commands
 def show_log(args):
     for f in sorted(os.listdir(idem_path), key=mtime):
-        print blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip()
+        print(blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip())
 
 
 # downloads the commands of a given script in a given version
@@ -119,7 +119,7 @@ def download_commands(script, version, recursionsafe=set()):
     commands = []
 
     # downloads the script and loop through each line
-    for line in urllib2.urlopen(url).read().splitlines():
+    for line in urllib.request.urlopen(url).read().decode("ascii").splitlines():
         # if the line begins with ##, it may be a directive, so we analyze its words
         if line.startswith("##"):
             split = line.rsplit()
