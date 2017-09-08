@@ -9,7 +9,7 @@ import subprocess
 import sys
 import urllib.request
 
-# path where the idem files will be stored, can be overriden with the "path" directive
+# path where the idem files will be stored
 idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 
 # list of commands that will always be run (no idem file will be created for them)
@@ -132,11 +132,6 @@ def download_commands(script, version, recursionsafe=set()):
                 commands.append(Command(
                     "cd /tmp && wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2}".format(
                         version, script, split[2])))
-            elif split[1] == "path":
-                # path directive: override idem's default path (useful in some cases such as docker volumes)
-                global idem_path
-                idem_path = split[2]
-                ensure_path()
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
