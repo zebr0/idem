@@ -110,13 +110,7 @@ def show_log(args):
 
 # downloads the commands of a given script in a given version
 # with the "include" directive, can do so recursively
-def download_commands(script, version, recursionsafe=set()):
-    # to prevent infinite recursion, we store each script name into a set and test each new script against the set
-    if script in recursionsafe:
-        raise Exception("Infinite recursion detected in script inclusion : " + script)
-    else:
-        recursionsafe.add(script)
-
+def download_commands(script, version):
     # builds the script url and initializes the resulting Commands' list
     url = "https://raw.githubusercontent.com/mazerty/idem/{0}/scripts/{1}.sh".format(version, script)
     commands = []
@@ -129,7 +123,7 @@ def download_commands(script, version, recursionsafe=set()):
 
             if split[1] == "include":
                 # include directive: recursively downloads the given script's commands and adds them to the list
-                commands.extend(download_commands(split[2], version, recursionsafe))
+                commands.extend(download_commands(split[2], version))
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the /tmp directory
                 commands.append(Command(
