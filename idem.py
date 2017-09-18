@@ -130,7 +130,7 @@ def download_commands(script, version, recursionsafe=set()):
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the /tmp directory
                 commands.append(Command(
-                    "cd /tmp && wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2}".format(
+                    "wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2} -O /tmp/{2}".format(
                         version, script, split[2])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
