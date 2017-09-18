@@ -51,17 +51,20 @@ class Command:
     def __init__(self, command):
         self.command = command  # the command itself
         self.hash = hashlib.md5(command.encode("ascii")).hexdigest()  # its md5 hash
-        self.todo = not os.path.isfile(full_path(self.hash))  # has the command never been run before ?
         self.always_run = any(filter(lambda a: a in self.command, always_run))  # is it always supposed to be run ?
+
+    # has the command ever been run before ?
+    def todo(self):
+        return not os.path.isfile(full_path(self.hash))
 
     # prints the command's status, whether it will be executed or not
     def dryrun(self):
-        print((blue("always") if self.always_run else blue("  todo") if self.todo else green("  done")), self.command)
+        print((blue("always") if self.always_run else blue("  todo") if self.todo() else green("  done")), self.command)
 
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
     def run(self, step):
-        if self.always_run or self.todo:
+        if self.always_run or self.todo():
             if step:
                 print(blue("next:"), self.command)
                 print(blue("(e)xecute"), green("(s)kip"), red("(a)bort ?"))
