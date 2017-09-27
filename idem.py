@@ -129,6 +129,11 @@ def download_commands(script, version):
                 commands.append(Command(
                     "wget https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2} -O /tmp/{2}".format(
                         version, script, split[2])))
+            elif split[1] == "template":
+                # template directive: similar to "resource" except it executes each {{ block }}
+                commands.append(Command(
+                    "wget -O- https://raw.githubusercontent.com/mazerty/idem/{0}/resources/{1}/{2} | template.py > /tmp/{2}".format(
+                        version, script, split[2])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
