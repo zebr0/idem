@@ -10,7 +10,7 @@ import sys
 import urllib.request
 
 # path where the idem files will be stored
-idem_path = os.path.join(os.path.expanduser("~"), ".idem")
+idem_path = "/var/idem"
 
 # list of commands that will always be run (no idem file will be created for them)
 always_run = ["apt-get update"]
@@ -138,6 +138,11 @@ def download_commands(script, version):
 
 # main function: downloads then runs or tests a given script in a given version
 def run_script(args):
+    # ensures that idem is run as root
+    if os.geteuid() != 0:
+        print(red("root privileges required to run commands"))
+        exit(1)
+
     # ensures that idem path exists
     if not os.path.isdir(idem_path):
         os.makedirs(idem_path)
