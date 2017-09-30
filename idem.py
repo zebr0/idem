@@ -16,12 +16,6 @@ idem_path = os.path.join(os.path.expanduser("~"), ".idem")
 always_run = ["apt-get update"]
 
 
-# ensures that idem path exists
-def ensure_path():
-    if not os.path.isdir(idem_path):
-        os.makedirs(idem_path)
-
-
 # gets the full path of an idem file
 def full_path(f): return os.path.join(idem_path, f)
 
@@ -104,8 +98,9 @@ class Command:
 
 # main function: prints a history of all idem executed commands
 def show_log(args):
-    for f in sorted(os.listdir(idem_path), key=mtime):
-        print(blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip())
+    if os.path.isdir(idem_path):
+        for f in sorted(os.listdir(idem_path), key=mtime):
+            print(blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip())
 
 
 # downloads the commands of a given script in a given version
@@ -143,14 +138,16 @@ def download_commands(script, version):
 
 # main function: downloads then runs or tests a given script in a given version
 def run_script(args):
+    # ensures that idem path exists
+    if not os.path.isdir(idem_path):
+        os.makedirs(idem_path)
+
     for c in download_commands(args.script, args.version):
         c.dryrun() if args.dry else c.run(args.step)
 
 
 # entrypoint
 if __name__ == '__main__':
-    ensure_path()
-
     # argumentparser : the best way to handle program arguments in python
     parser = argparse.ArgumentParser(
         description="Lightweight Python-Shell framework for idempotent local provisioning.")
