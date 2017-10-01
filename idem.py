@@ -77,7 +77,7 @@ class Command:
 
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
             sp = subprocess.Popen(self.command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            for line in io.TextIOWrapper(sp.stdout, newline="\n"):
+            for line in io.TextIOWrapper(sp.stdout, newline="\n", errors="replace"):
                 print(" " + line, end="")
             sp.wait()
 
