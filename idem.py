@@ -97,7 +97,8 @@ class Command:
 def show_log(args):
     if os.path.isdir(idem_path):
         for f in sorted(os.listdir(idem_path), key=mtime):
-            print(blue(f), green(strformat(mtime(f))), open(full_path(f)).read().strip())
+            with open(full_path(f)) as file:
+                print(blue(f), green(strformat(mtime(f))), file.read().strip())
 
 
 # downloads the commands of a given script in a given version
