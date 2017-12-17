@@ -9,9 +9,9 @@ import sys
 import urllib.request
 
 # urls for scripts and resources
-base_url = "https://raw.githubusercontent.com/mazerty/idem"
-script_url = base_url + "/master/scripts/{0}.sh"
-resource_url = base_url + "/master/resources/{0}/{1}"
+base_url = "https://raw.githubusercontent.com/mazerty/idem/master"
+script_url = base_url + "/scripts/{0}.sh"
+resource_url = base_url + "/resources/{0}/{1}"
 
 # commands based on those urls
 resource_command = "wget " + resource_url + " -O /tmp/{1}"
