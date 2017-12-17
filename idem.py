@@ -1,6 +1,7 @@
 #!/usr/bin/python3 -u
 
 import argparse
+import configparser
 import datetime
 import hashlib
 import os.path
@@ -8,8 +9,12 @@ import subprocess
 import sys
 import urllib.request
 
+# reads the configuration file first from /etc then from the working directory if present
+confparser = configparser.ConfigParser()
+confparser.read(["/etc/idem.conf", "idem.conf"])
+
 # urls for scripts and resources
-base_url = "https://raw.githubusercontent.com/mazerty/idem/master"
+base_url = confparser.get("config", "base_url")
 script_url = base_url + "/scripts/{0}.sh"
 resource_url = base_url + "/resources/{0}/{1}"
 
@@ -153,12 +158,13 @@ def run_script(args):
         c.dryrun() if args.dry else c.run(args.step)
 
 
+# TODO : remove main, it's pointless since we have global variables and everything
 # entrypoint
 if __name__ == '__main__':
     # argumentparser : the best way to handle program arguments in python
-    parser = argparse.ArgumentParser(
+    argparser = argparse.ArgumentParser(
         description="Lightweight Python-Shell framework for idempotent local provisioning.")
-    subparsers = parser.add_subparsers()
+    subparsers = argparser.add_subparsers()
 
     parser_log = subparsers.add_parser("log", help="prints a history of all idem.py executed commands")
     parser_log.set_defaults(func=show_log)
@@ -169,5 +175,5 @@ if __name__ == '__main__':
     parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
     parser_run.set_defaults(func=run_script)
 
-    args = parser.parse_args()
+    args = argparser.parse_args()
     args.func(args)
