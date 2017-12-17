@@ -10,12 +10,12 @@ import urllib.request
 
 # urls for scripts and resources
 base_url = "https://raw.githubusercontent.com/mazerty/idem"
-script_url = base_url + "/{0}/scripts/{1}.sh"
-resource_url = base_url + "/{0}/resources/{1}/{2}"
+script_url = base_url + "/master/scripts/{0}.sh"
+resource_url = base_url + "/master/resources/{0}/{1}"
 
 # commands based on those urls
-resource_command = "wget " + resource_url + " -O /tmp/{2}"
-template_command = "wget -O- " + resource_url + " | template.py > /tmp/{2}"
+resource_command = "wget " + resource_url + " -O /tmp/{1}"
+template_command = "wget -O- " + resource_url + " | template.py > /tmp/{1}"
 
 # path where the idem files will be stored
 idem_path = "/var/idem"
@@ -110,27 +110,27 @@ def show_log(args):
                 print(blue(f), green(strformat(mtime(f))), file.read().strip())
 
 
-# downloads the commands of a given script in a given version
+# downloads the commands of a given script
 # with the "include" directive, can do so recursively
-def download_commands(script, version):
+def download_commands(script):
     # initializes the resulting Commands' list
     commands = []
 
     # downloads the script and loop through each line
-    for line in urllib.request.urlopen(script_url.format(version, script)).read().decode("ascii").splitlines():
+    for line in urllib.request.urlopen(script_url.format(script)).read().decode("ascii").splitlines():
         # if the line begins with ##, it may be a directive, so we analyze its words
         if line.startswith("##"):
             split = line.rsplit()
 
             if split[1] == "include":
                 # include directive: recursively downloads the given script's commands and adds them to the list
-                commands.extend(download_commands(split[2], version))
+                commands.extend(download_commands(split[2]))
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the /tmp directory
-                commands.append(Command(resource_command.format(version, script, split[2])))
+                commands.append(Command(resource_command.format(script, split[2])))
             elif split[1] == "template":
                 # template directive: similar to "resource" except it executes each {{ block }}
-                commands.append(Command(template_command.format(version, script, split[2])))
+                commands.append(Command(template_command.format(script, split[2])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
@@ -138,7 +138,7 @@ def download_commands(script, version):
     return commands
 
 
-# main function: downloads then runs or tests a given script in a given version
+# main function: downloads then runs or tests a given script
 def run_script(args):
     # ensures that idem is run as root
     if os.geteuid() != 0:
@@ -149,7 +149,7 @@ def run_script(args):
     if not os.path.isdir(idem_path):
         os.makedirs(idem_path)
 
-    for c in download_commands(args.script, args.version):
+    for c in download_commands(args.script):
         c.dryrun() if args.dry else c.run(args.step)
 
 
@@ -163,9 +163,8 @@ if __name__ == '__main__':
     parser_log = subparsers.add_parser("log", help="prints a history of all idem.py executed commands")
     parser_log.set_defaults(func=show_log)
 
-    parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script in a given version")
+    parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
     parser_run.add_argument("script", nargs="?", help="script identifier in the repository")
-    parser_run.add_argument("version", nargs="?", default="master", help="repository branch or tag (default: master)")
     parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
     parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
     parser_run.set_defaults(func=run_script)
