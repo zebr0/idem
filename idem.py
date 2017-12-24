@@ -107,14 +107,6 @@ class Command:
             print(green("skipping"), self.command)
 
 
-# main function: prints a history of all idem executed commands
-def show_log(args):
-    if os.path.isdir(idem_path):
-        for f in sorted(os.listdir(idem_path), key=mtime):
-            with open(full_path(f)) as file:
-                print(blue(f), green(strformat(mtime(f))), file.read().strip())
-
-
 # downloads the commands of a given script
 # with the "include" directive, can do so recursively
 def download_commands(script):
@@ -143,6 +135,14 @@ def download_commands(script):
     return commands
 
 
+# main function: prints a history of all idem executed commands
+def show_log(args):
+    if os.path.isdir(idem_path):
+        for f in sorted(os.listdir(idem_path), key=mtime):
+            with open(full_path(f)) as file:
+                print(blue(f), green(strformat(mtime(f))), file.read().strip())
+
+
 # main function: downloads then runs or tests a given script
 def run_script(args):
     # ensures that idem is run as root
@@ -158,7 +158,6 @@ def run_script(args):
         c.dryrun() if args.dry else c.run(args.step)
 
 
-# TODO : remove main, it's pointless since we have global variables and everything
 # entrypoint
 if __name__ == '__main__':
     # argumentparser : the best way to handle program arguments in python
