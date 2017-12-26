@@ -9,33 +9,6 @@ import subprocess
 import sys
 import urllib.request
 
-# reads the configuration file first from /etc then from the working directory if present
-confparser = configparser.ConfigParser()
-confparser.read(["/etc/idem.conf", "idem.conf"])
-
-# urls for scripts and resources
-base_url = confparser.get("config", "base_url")
-script_url = base_url + "/scripts/{0}.sh"
-resource_url = base_url + "/resources/{0}/{1}"
-
-# commands based on those urls
-resource_command = "wget " + resource_url + " -O /tmp/{1}"
-template_command = "wget -O- " + resource_url + " | template.py > /tmp/{1}"
-
-# path where the idem files will be stored
-idem_path = "/var/idem"
-
-# list of commands that will always be run (no idem file will be created for them)
-always_run = ["apt-get update"]
-
-
-# gets the full path of an idem file
-def full_path(f): return os.path.join(idem_path, f)
-
-
-# gets the mtime of an idem file
-def mtime(f): return os.path.getmtime(full_path(f))
-
 
 # formats given time in a human-readable way
 def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
@@ -53,16 +26,63 @@ def green(string): return '\033[92m' + string + '\033[0m'
 def red(string): return '\033[91m' + string + '\033[0m'
 
 
+# handles idem configuration
+class Configuration:
+    def __init__(self):
+        # reads the configuration file first from /etc then from the working directory if present
+        parser = configparser.ConfigParser()
+        parser.read(["/etc/idem.conf", "idem.conf"])
+
+        # base url for idem scripts and resources (mandatory in config file)
+        self._base_url = parser.get("config", "base_url")
+
+        # path where the idem files will be stored
+        self._idem_path = parser.get("config", "idem_path", fallback="/var/idem")
+
+        # list of commands that will always be run (no idem file will be created for them)
+        self._always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
+
+    def get_resource_url(self): return self._base_url + "/resources/{0}/{1}"
+
+    # returns the formatted command to download a given resource for a given script
+    def get_resource_command(self, script, resource):
+        return ("wget " + self.get_resource_url() + " -O /tmp/{1}").format(script, resource)
+
+    # returns the formatted command to download and parse a given template for a given script
+    def get_template_command(self, script, template):
+        return ("wget -O- " + self.get_resource_url() + " | template.py > /tmp/{1}").format(script, template)
+
+    # returns the url for a given script
+    def get_script_url(self, script):
+        return (self._base_url + "/scripts/{0}.sh").format(script)
+
+    def get_idem_path(self): return self._idem_path
+
+    # returns the full path of an idem file
+    def get_full_path(self, file):
+        return os.path.join(self._idem_path, file)
+
+    # returns the mtime of an idem file
+    def get_mtime(self, file):
+        return os.path.getmtime(self.get_full_path(file))
+
+    def get_always_run(self): return self._always_run
+
+
+# reads the configuration for the rest of the script
+config = Configuration()
+
+
 # represents a command about to be executed
 class Command:
     def __init__(self, command):
         self.command = command  # the command itself
         self.hash = hashlib.md5(command.encode("ascii")).hexdigest()  # its md5 hash
-        self.always_run = any(filter(lambda a: a in self.command, always_run))  # is it always supposed to be run ?
+        self.always_run = any(filter(lambda a: a in self.command, config.get_always_run()))  # is it always supposed to be run ?
 
     # has the command ever been run before ?
     def todo(self):
-        return not os.path.isfile(full_path(self.hash))
+        return not os.path.isfile(config.get_full_path(self.hash))
 
     # prints the command's status, whether it will be executed or not
     def dryrun(self):
@@ -97,7 +117,7 @@ class Command:
                 # and the command only has to be run once...
                 if not self.always_run:
                     # then creates an idem file to mark and log the command's execution
-                    with open(full_path(self.hash), "w") as f:
+                    with open(config.get_full_path(self.hash), "w") as f:
                         f.writelines(self.command)
                 print(green("done"))
             else:
@@ -114,7 +134,7 @@ def download_commands(script):
     commands = []
 
     # downloads the script and loop through each line
-    for line in urllib.request.urlopen(script_url.format(script)).read().decode("ascii").splitlines():
+    for line in urllib.request.urlopen(config.get_script_url(script)).read().decode("ascii").splitlines():
         # if the line begins with ##, it may be a directive, so we analyze its words
         if line.startswith("##"):
             split = line.rsplit()
@@ -124,10 +144,10 @@ def download_commands(script):
                 commands.extend(download_commands(split[2]))
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the /tmp directory
-                commands.append(Command(resource_command.format(script, split[2])))
+                commands.append(Command(config.get_resource_command(script, split[2])))
             elif split[1] == "template":
                 # template directive: similar to "resource" except it executes each {{ block }}
-                commands.append(Command(template_command.format(script, split[2])))
+                commands.append(Command(config.get_template_command(script, split[2])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
@@ -137,10 +157,10 @@ def download_commands(script):
 
 # main function: prints a history of all idem executed commands
 def show_log(args):
-    if os.path.isdir(idem_path):
-        for f in sorted(os.listdir(idem_path), key=mtime):
-            with open(full_path(f)) as file:
-                print(blue(f), green(strformat(mtime(f))), file.read().strip())
+    if os.path.isdir(config.get_idem_path()):
+        for f in sorted(os.listdir(config.get_idem_path()), key=config.get_mtime):
+            with open(config.get_full_path(f)) as file:
+                print(blue(f), green(strformat(config.get_mtime(f))), file.read().strip())
 
 
 # main function: downloads then runs or tests a given script
@@ -151,8 +171,8 @@ def run_script(args):
         exit(1)
 
     # ensures that idem path exists
-    if not os.path.isdir(idem_path):
-        os.makedirs(idem_path)
+    if not os.path.isdir(config.get_idem_path()):
+        os.makedirs(config.get_idem_path())
 
     for c in download_commands(args.script):
         c.dryrun() if args.dry else c.run(args.step)
