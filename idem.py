@@ -76,24 +76,30 @@ config = Configuration()
 # represents a command about to be executed
 class Command:
     def __init__(self, command):
-        self.command = command  # the command itself
-        self.hash = hashlib.md5(command.encode("ascii")).hexdigest()  # its md5 hash
-        self.always_run = any(filter(lambda a: a in self.command, config.get_always_run()))  # is it always supposed to be run ?
+        # the command itself
+        self._command = command
+
+        # its md5 hash
+        self._hash = hashlib.md5(command.encode("ascii")).hexdigest()
+
+        # is it always supposed to be run ?
+        self._always_run = any(filter(lambda a: a in self._command, config.get_always_run()))
 
     # has the command ever been run before ?
     def todo(self):
-        return not os.path.isfile(config.get_full_path(self.hash))
+        return not os.path.isfile(config.get_full_path(self._hash))
 
     # prints the command's status, whether it will be executed or not
     def dryrun(self):
-        print((blue("always") if self.always_run else blue("  todo") if self.todo() else green("  done")), self.command)
+        print((blue("always") if self._always_run else blue("  todo") if self.todo() else green("  done")),
+              self._command)
 
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
     def run(self, step):
-        if self.always_run or self.todo():
+        if self._always_run or self.todo():
             if step:
-                print(blue("next:"), self.command)
+                print(blue("next:"), self._command)
                 print(blue("(e)xecute"), green("(s)kip"), red("(a)bort ?"))
 
                 choice = sys.stdin.readline().strip()
@@ -106,25 +112,25 @@ class Command:
                     print(red("aborting"))
                     exit(0)
             else:
-                print(blue("executing"), self.command)
+                print(blue("executing"), self._command)
 
             # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            sp = subprocess.Popen(self.command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+            sp = subprocess.Popen(self._command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
             sp.wait()
 
             # if the run is successful...
             if sp.returncode == 0:
                 # and the command only has to be run once...
-                if not self.always_run:
+                if not self._always_run:
                     # then creates an idem file to mark and log the command's execution
-                    with open(config.get_full_path(self.hash), "w") as f:
-                        f.writelines(self.command)
+                    with open(config.get_full_path(self._hash), "w") as file:
+                        file.writelines(self._command)
                 print(green("done"))
             else:
                 print(red("error"))
                 exit(1)
         else:
-            print(green("skipping"), self.command)
+            print(green("skipping"), self._command)
 
 
 # downloads the commands of a given script
