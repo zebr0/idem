@@ -33,8 +33,9 @@ class Configuration:
         parser = configparser.ConfigParser()
         parser.read(["/etc/idem.conf", "idem.conf"])
 
-        # base url for idem scripts and resources (mandatory in config file)
-        self._base_url = parser.get("config", "base_url")
+        # base url for idem scripts and resources
+        self._base_url = parser.get("config", "base_url",
+                                    fallback="https://raw.githubusercontent.com/mazerty/idem-files/master")
 
         # path where the idem files will be stored
         self._idem_path = parser.get("config", "idem_path", fallback="/var/idem")
