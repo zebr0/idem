@@ -1,3 +1,3 @@
 #!/bin/sh -e
-wget https://raw.githubusercontent.com/mazerty/idem/master/idem.py -O /usr/local/bin/idem.py
-chmod +x /usr/local/bin/*.py
+wget https://raw.githubusercontent.com/mazerty/idem/master/src/idem -O /usr/local/bin/idem
+chmod +x /usr/local/bin/idem
