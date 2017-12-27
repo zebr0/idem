@@ -164,9 +164,9 @@ def download_commands(script):
 # main function: prints a history of all idem executed commands
 def show_log(args):
     if os.path.isdir(config.get_idem_path()):
-        for f in sorted(os.listdir(config.get_idem_path()), key=config.get_mtime):
-            with open(config.get_full_path(f)) as file:
-                print(blue(f), green(strformat(config.get_mtime(f))), file.read().strip())
+        for file_name in sorted(os.listdir(config.get_idem_path()), key=config.get_mtime):
+            with open(config.get_full_path(file_name)) as file:
+                print(blue(file_name), green(strformat(config.get_mtime(file_name))), file.read().strip())
 
 
 # main function: downloads then runs or tests a given script
