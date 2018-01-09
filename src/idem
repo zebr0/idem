@@ -55,7 +55,7 @@ class Configuration:
 
     # returns the url for a given script
     def get_script_url(self, script):
-        return (self._base_url + "/scripts/{0}.sh").format(script)
+        return (self._base_url + "/scripts/{0}").format(script)
 
     def get_idem_path(self): return self._idem_path
 
