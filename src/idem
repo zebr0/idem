@@ -51,7 +51,7 @@ class Configuration:
 
     # returns the formatted command to download and parse a given template for a given script
     def get_template_command(self, script, template):
-        return ("wget -O- " + self.get_resource_url() + " | template.py > /tmp/{1}").format(script, template)
+        return ("wget -O- " + self.get_resource_url() + " | templ > /tmp/{1}").format(script, template)
 
     # returns the url for a given script
     def get_script_url(self, script):
