@@ -101,12 +101,16 @@ class Command:
         if self._always_run or self.todo():
             if step:
                 print(blue("next:"), self._command)
-                print(blue("(e)xecute"), green("(s)kip"), red("(a)bort ?"))
+                print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
 
                 choice = sys.stdin.readline().strip()
                 if choice == "e":
                     print(blue("executing"))
                 elif choice == "s":
+                    print(green("skipped"))
+                    return
+                elif choice == "p":
+                    self._write_idem_file()
                     print(green("skipped"))
                     return
                 else:
@@ -121,17 +125,20 @@ class Command:
 
             # if the run is successful...
             if sp.returncode == 0:
-                # and the command only has to be run once...
-                if not self._always_run:
-                    # then creates an idem file to mark and log the command's execution
-                    with open(config.get_full_path(self._hash), "w") as file:
-                        file.writelines(self._command)
+                self._write_idem_file()
                 print(green("done"))
             else:
                 print(red("error"))
                 exit(1)
         else:
             print(green("skipping"), self._command)
+
+    # creates an idem file to mark and log the command's execution
+    def _write_idem_file(self):
+        # creates the file only if the command has to be run just once...
+        if not self._always_run:
+            with open(config.get_full_path(self._hash), "w") as file:
+                file.writelines(self._command)
 
 
 # downloads the commands of a given script
