@@ -1,3 +1,9 @@
+idem (1.0.0-0ubuntu2) xenial; urgency=medium
+
+  * Fixed missing dependency
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Sun, 14 Jan 2018 16:21:00 +0100
+
 idem (1.0.0-0ubuntu1) xenial; urgency=medium
 
   * Initial release

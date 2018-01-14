@@ -2,7 +2,7 @@ Source: idem
 Section: admin
 Priority: optional
 Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
-Build-Depends: debhelper (>=9), python3
+Build-Depends: debhelper (>=9), python3, templ
 Standards-Version: 3.9.6
 
 Package: idem
