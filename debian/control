@@ -1,0 +1,11 @@
+Source: idem
+Section: admin
+Priority: optional
+Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
+Build-Depends: debhelper (>=9), python3
+Standards-Version: 3.9.6
+
+Package: idem
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, ${templ:Depends}
+Description: Lightweight Python-Shell framework for idempotent local provisioning
