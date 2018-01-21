@@ -1,0 +1,14 @@
+[94mexecuting[0m echo "1"
+1
+[92mdone[0m
+[94mexecuting[0m echo "always1"
+always1
+[92mdone[0m
+[94mexecuting[0m echo "always2"
+always2
+[92mdone[0m
+[94mexecuting[0m echo "2"
+2
+[92mdone[0m
+[94mexecuting[0m wget http://localhost:8000/resources/include/resource -O tmp/resource
+[92mdone[0m

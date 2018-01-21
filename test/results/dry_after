@@ -1,0 +1,5 @@
+[92m  done[0m echo "1"
+[94malways[0m echo "always1"
+[94malways[0m echo "always2"
+[92m  done[0m echo "2"
+[92m  done[0m wget http://localhost:8000/resources/include/resource -O tmp/resource
