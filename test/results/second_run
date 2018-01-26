@@ -7,3 +7,5 @@ always2
 [92mdone[0m
 [92mskipping[0m echo "2"
 [92mskipping[0m wget http://localhost:8000/resources/include/resource -O tmp/resource
+[92mskipping[0m echo "1" > tmp/retry
+[92mskipping[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]

@@ -7,6 +7,7 @@ import hashlib
 import os.path
 import subprocess
 import sys
+import time
 import urllib.request
 
 
@@ -43,6 +44,12 @@ class Configuration:
         # list of commands that will always be run (no idem file will be created for them)
         self._always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
 
+        # in "retry" mode, the number of retries should a command fail
+        self._retry_number = int(parser.get("config", "retry_number", fallback="2"))
+
+        # in "retry" mode, the delay in seconds between each retry
+        self._retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
+
     def get_resource_url(self): return self._base_url + "/resources/{0}/{1}"
 
     # returns the formatted command to download, for a given script, a given resource in a given directory
@@ -68,6 +75,10 @@ class Configuration:
         return os.path.getmtime(self.get_full_path(file))
 
     def get_always_run(self): return self._always_run
+
+    def get_retry_number(self): return self._retry_number
+
+    def get_retry_delay(self): return self._retry_delay
 
 
 # reads the configuration for the rest of the script
@@ -97,7 +108,8 @@ class Command:
 
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
-    def run(self, step):
+    # in "retry" mode, should a command fail, waits for a few seconds before trying it again
+    def run(self, step, retry):
         if self._always_run or self.todo():
             if step:
                 print(blue("next:"), self._command)
@@ -119,17 +131,26 @@ class Command:
             else:
                 print(blue("executing"), self._command)
 
-            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            sp = subprocess.Popen(self._command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-            sp.wait()
+            # initializes the maximum number of times we try to run the command
+            try_number = 1 + (config.get_retry_number() if retry else 0)
+            while try_number:
+                try_number = try_number - 1
 
-            # if the run is successful...
-            if sp.returncode == 0:
-                self._write_idem_file()
-                print(green("done"))
-            else:
-                print(red("error"))
-                exit(1)
+                # opens a subshell to execute the command, and prints stdout and stderr lines as they come
+                sp = subprocess.Popen(self._command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+                sp.wait()
+
+                # if the run is successful...
+                if sp.returncode == 0:
+                    self._write_idem_file()
+                    print(green("done"))
+                    return
+                elif try_number:  # if not, and there's still retries to do, we wait before looping again
+                    time.sleep(config.get_retry_delay())
+                    print(blue("retrying"))
+                else:
+                    print(red("error"))
+                    exit(1)
         else:
             print(green("skipping"), self._command)
 
@@ -189,7 +210,7 @@ def run_script(args):
         os.makedirs(config.get_idem_path())
 
     for c in download_commands(args.script):
-        c.dryrun() if args.dry else c.run(args.step)
+        c.dryrun() if args.dry else c.run(args.step, args.retry)
 
 
 # entrypoint
@@ -206,6 +227,8 @@ if __name__ == '__main__':
     parser_run.add_argument("script", nargs="?", help="script identifier in the repository")
     parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
     parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
+    parser_run.add_argument("--retry", action="store_true",
+                            help="should a command fail, waits for a few seconds before trying it again")
     parser_run.set_defaults(func=run_script)
 
     args = argparser.parse_args()
