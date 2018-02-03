@@ -1,3 +1,10 @@
+idem (1.1.0-0ubuntu1) xenial; urgency=medium
+
+  * Added test suite
+  * Added retry mode
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Fri, 2 Feb 2018 19:21:00 +0100
+
 idem (1.0.0-0ubuntu3) xenial; urgency=medium
 
   * Hope this is the right dependency configuration this time...
