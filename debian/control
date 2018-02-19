@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
 Build-Depends: debhelper (>=9)
-Standards-Version: 3.9.6
+Standards-Version: 3.9.7
 
 Package: idem
 Architecture: all

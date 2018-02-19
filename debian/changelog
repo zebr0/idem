@@ -1,24 +1,5 @@
-idem (1.1.0-0ubuntu1) xenial; urgency=medium
-
-  * Added test suite
-  * Added retry mode
-
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Fri, 2 Feb 2018 19:21:00 +0100
-
-idem (1.0.0-0ubuntu3) xenial; urgency=medium
-
-  * Hope this is the right dependency configuration this time...
-
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Sun, 14 Jan 2018 17:02:00 +0100
-
-idem (1.0.0-0ubuntu2) xenial; urgency=medium
-
-  * Fixed missing dependency
-
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Sun, 14 Jan 2018 16:21:00 +0100
-
 idem (1.0.0-0ubuntu1) xenial; urgency=medium
 
   * Initial release
 
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Sun, 14 Jan 2018 15:43:12 +0100
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Mon, 19 Feb 2018 20:30:00 +0100

@@ -1,9 +1,9 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: idem
-Source: https://github.com/mazerty/idem
+Source: https://github.com/zebr0/idem
 
 Files: *
-Copyright: 2018 Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
+Copyright: 2018 zebr0
 License: MIT
 
 License: MIT
