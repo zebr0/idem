@@ -1,14 +1,14 @@
 #!/bin/sh -ex
 
+# creates tmp directory
+mkdir tmp
+
 # starts the mock server
 cd mock
 python3 -m http.server &
-pid=$!
+echo $! > ../tmp/pid
 sleep 1
 cd ..
-
-# creates tmp directory
-mkdir tmp
 
 # test dry output before run
 sudo ../src/idem run test --dry > tmp/dry_before
@@ -33,7 +33,7 @@ sudo ../src/idem run test > tmp/second_run
 diff tmp/second_run results/second_run
 
 # stops the mock server
-kill ${pid}
+kill $(cat tmp/pid)
 
 # cleans tmp directory
 sudo rm -rf tmp
