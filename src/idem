@@ -39,16 +39,16 @@ class Configuration:
                                     fallback="https://raw.githubusercontent.com/zebr0/idem-files/master")
 
         # path where the idem files will be stored
-        self._idem_path = parser.get("config", "idem_path", fallback="/var/idem")
+        self.idem_path = parser.get("config", "idem_path", fallback="/var/idem")
 
         # list of commands that will always be run (no idem file will be created for them)
-        self._always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
+        self.always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
 
         # in "retry" mode, the number of retries should a command fail
-        self._retry_number = int(parser.get("config", "retry_number", fallback="2"))
+        self.retry_number = int(parser.get("config", "retry_number", fallback="2"))
 
         # in "retry" mode, the delay in seconds between each retry
-        self._retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
+        self.retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
 
     def get_resource_url(self): return self._base_url + "/resources/{0}/{1}"
 
@@ -64,21 +64,13 @@ class Configuration:
     def get_script_url(self, script):
         return (self._base_url + "/scripts/{0}").format(script)
 
-    def get_idem_path(self): return self._idem_path
-
     # returns the full path of an idem file
     def get_full_path(self, file):
-        return os.path.join(self._idem_path, file)
+        return os.path.join(self.idem_path, file)
 
     # returns the mtime of an idem file
     def get_mtime(self, file):
         return os.path.getmtime(self.get_full_path(file))
-
-    def get_always_run(self): return self._always_run
-
-    def get_retry_number(self): return self._retry_number
-
-    def get_retry_delay(self): return self._retry_delay
 
 
 # reads the configuration for the rest of the script
@@ -95,7 +87,7 @@ class Command:
         self._hash = hashlib.md5(command.encode("ascii")).hexdigest()
 
         # is it always supposed to be run ?
-        self._always_run = any(filter(lambda a: a in self._command, config.get_always_run()))
+        self._always_run = any(filter(lambda a: a in self._command, config.always_run))
 
     # has the command ever been run before ?
     def todo(self):
@@ -132,7 +124,7 @@ class Command:
                 print(blue("executing"), self._command)
 
             # initializes the maximum number of times we try to run the command
-            try_number = 1 + (config.get_retry_number() if retry else 0)
+            try_number = 1 + (config.retry_number if retry else 0)
             while try_number:
                 try_number = try_number - 1
 
@@ -146,7 +138,7 @@ class Command:
                     print(green("done"))
                     return
                 elif try_number:  # if not, and there's still retries to do, we wait before looping again
-                    time.sleep(config.get_retry_delay())
+                    time.sleep(config.retry_delay)
                     print(blue("retrying"))
                 else:
                     print(red("error"))
@@ -192,8 +184,8 @@ def download_commands(script):
 
 # main function: prints a history of all idem executed commands
 def show_log(args):
-    if os.path.isdir(config.get_idem_path()):
-        for file_name in sorted(os.listdir(config.get_idem_path()), key=config.get_mtime):
+    if os.path.isdir(config.idem_path):
+        for file_name in sorted(os.listdir(config.idem_path), key=config.get_mtime):
             with open(config.get_full_path(file_name)) as file:
                 print(blue(file_name), green(strformat(config.get_mtime(file_name))), file.read().strip())
 
@@ -206,8 +198,8 @@ def run_script(args):
         exit(1)
 
     # ensures that idem path exists
-    if not os.path.isdir(config.get_idem_path()):
-        os.makedirs(config.get_idem_path())
+    if not os.path.isdir(config.idem_path):
+        os.makedirs(config.idem_path)
 
     for c in download_commands(args.script):
         c.dryrun() if args.dry else c.run(args.step, args.retry)
