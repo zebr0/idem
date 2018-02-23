@@ -1,5 +1,9 @@
 #!/bin/sh -ex
 
+# cleans a potentially failed previous test run
+[ -f tmp/pid ] && kill $(cat tmp/pid)
+[ -d tmp/ ] && sudo rm -rf tmp/
+
 # creates tmp directory
 mkdir tmp
 
