@@ -216,7 +216,7 @@ if __name__ == '__main__':
     parser_log.set_defaults(func=show_log)
 
     parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
-    parser_run.add_argument("script", nargs="?", help="script identifier in the repository")
+    parser_run.add_argument("script", help="script identifier in the repository")
     parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
     parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
     parser_run.add_argument("--retry", action="store_true",
