@@ -1,3 +1,11 @@
+idem (1.1.0-0ubuntu1) xenial; urgency=medium
+
+  * cleaned up some conf properties
+  * bugfix: script name is mandatory
+  * added a helper function to easily set the base url to another github account
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Mon, 26 Feb 2018 14:45:00 +0100
+
 idem (1.0.0-0ubuntu1) xenial; urgency=medium
 
   * Initial release
