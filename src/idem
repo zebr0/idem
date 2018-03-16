@@ -16,15 +16,15 @@ def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
 
 
 # turns given text in blue
-def blue(string): return '\033[94m' + string + '\033[0m'
+def blue(string): return "\033[94m" + string + "\033[0m"
 
 
 # turns given text in green
-def green(string): return '\033[92m' + string + '\033[0m'
+def green(string): return "\033[92m" + string + "\033[0m"
 
 
 # turns given text in red
-def red(string): return '\033[91m' + string + '\033[0m'
+def red(string): return "\033[91m" + string + "\033[0m"
 
 
 # handles idem configuration
@@ -225,7 +225,7 @@ def set_base_url_github(args):
 
 
 # entrypoint
-if __name__ == '__main__':
+if __name__ == "__main__":
     # argumentparser : the best way to handle program arguments in python
     argparser = argparse.ArgumentParser(
         description="Lightweight Python-Shell framework for idempotent local provisioning.")
