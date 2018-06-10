@@ -7,5 +7,5 @@ Standards-Version: 3.9.7
 
 Package: idem
 Architecture: all
-Depends: ${misc:Depends}, python3, templ
+Depends: ${misc:Depends}, python3
 Description: Lightweight Python-Shell framework for idempotent local provisioning

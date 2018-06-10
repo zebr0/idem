@@ -12,8 +12,7 @@ sudo apt-get install idem
 Or you can grab the files directly from GitHub like this:
 ```bash
 sudo wget https://raw.githubusercontent.com/zebr0/idem/master/src/idem -O /usr/local/bin/idem
-sudo wget https://raw.githubusercontent.com/zebr0/templ/master/src/templ -O /usr/local/bin/templ
-sudo chmod +x /usr/local/bin/idem /usr/local/bin/templ
+sudo chmod +x /usr/local/bin/idem
 ```
 
 WORK IN PROGRESS

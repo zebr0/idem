@@ -50,15 +50,9 @@ class Configuration:
         # in "retry" mode, the delay in seconds between each retry
         self.retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
 
-    def get_resource_url(self): return self._base_url + "/resources/{0}/{1}"
-
     # returns the formatted command to download, for a given script, a given resource in a given directory
     def get_resource_command(self, script, resource, directory):
-        return ("wget " + self.get_resource_url() + " -O {2}/{1}").format(script, resource, directory)
-
-    # returns the formatted command to download and parse, for a given script, a given template in a given directory
-    def get_template_command(self, script, template, directory):
-        return ("wget -O- " + self.get_resource_url() + " | templ > {2}/{1}").format(script, template, directory)
+        return ("wget " + self._base_url + "/resources/{0}/{1} -O {2}/{1}").format(script, resource, directory)
 
     # returns the url for a given script
     def get_script_url(self, script):
@@ -172,9 +166,6 @@ def download_commands(script):
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the given directory
                 commands.append(Command(config.get_resource_command(script, split[2], split[3])))
-            elif split[1] == "template":
-                # template directive: similar to "resource" except it executes each {{ block }}
-                commands.append(Command(config.get_template_command(script, split[2], split[3])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
