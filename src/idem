@@ -27,48 +27,32 @@ def green(string): return "\033[92m" + string + "\033[0m"
 def red(string): return "\033[91m" + string + "\033[0m"
 
 
-# handles idem configuration
-class Configuration:
-    def __init__(self):
-        # reads the configuration file first from /etc then from the working directory if present
-        parser = configparser.ConfigParser()
-        parser.read(["/etc/idem.conf", "idem.conf"])
+# reads the configuration file first from /etc then from the working directory if present
+parser = configparser.ConfigParser()
+parser.read(["/etc/idem.conf", "idem.conf"])
 
-        # base url for idem scripts and resources
-        self._base_url = parser.get("config", "base_url",
-                                    fallback="https://raw.githubusercontent.com/zebr0/idem-files/master")
+# base url for idem scripts and resources
+base_url = parser.get("config", "base_url", fallback="https://raw.githubusercontent.com/zebr0/idem-files/master")
 
-        # path where the idem files will be stored
-        self.idem_path = parser.get("config", "idem_path", fallback="/var/idem")
+# path where the idem files will be stored
+idem_path = parser.get("config", "idem_path", fallback="/var/idem")
 
-        # list of commands that will always be run (no idem file will be created for them)
-        self.always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
+# list of commands that will always be run (no idem file will be created for them)
+always_run = parser.get("config", "always_run", fallback="apt-get update").split(";")
 
-        # in "retry" mode, the number of retries should a command fail
-        self.retry_number = int(parser.get("config", "retry_number", fallback="2"))
+# in "retry" mode, the number of retries should a command fail
+retry_number = int(parser.get("config", "retry_number", fallback="2"))
 
-        # in "retry" mode, the delay in seconds between each retry
-        self.retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
-
-    # returns the formatted command to download, for a given script, a given resource in a given directory
-    def get_resource_command(self, script, resource, directory):
-        return ("wget " + self._base_url + "/resources/{0}/{1} -O {2}/{1}").format(script, resource, directory)
-
-    # returns the url for a given script
-    def get_script_url(self, script):
-        return (self._base_url + "/scripts/{0}").format(script)
-
-    # returns the full path of an idem file
-    def get_full_path(self, file):
-        return os.path.join(self.idem_path, file)
-
-    # returns the mtime of an idem file
-    def get_mtime(self, file):
-        return os.path.getmtime(self.get_full_path(file))
+# in "retry" mode, the delay in seconds between each retry
+retry_delay = int(parser.get("config", "retry_delay", fallback="4"))
 
 
-# reads the configuration for the rest of the script
-config = Configuration()
+# returns the full path of an idem file
+def get_full_path(file): return os.path.join(idem_path, file)
+
+
+# returns the mtime of an idem file
+def get_mtime(file): return os.path.getmtime(get_full_path(file))
 
 
 # represents a command about to be executed
@@ -78,29 +62,34 @@ class Command:
         self._command = command
 
         # its md5 hash
-        self._hash = hashlib.md5(command.encode("ascii")).hexdigest()
+        self._hash = hashlib.md5(self._command.encode("ascii")).hexdigest()
 
         # is it always supposed to be run ?
-        self._always_run = any(filter(lambda a: a in self._command, config.always_run))
+        self._always_run = any(filter(lambda a: a in self._command, always_run))
 
     # has the command ever been run before ?
-    def todo(self):
-        return not os.path.isfile(config.get_full_path(self._hash))
+    def _todo(self):
+        return not os.path.isfile(get_full_path(self._hash))
+
+    # creates an idem file to mark and log the command's execution
+    def _write_idem_file(self):
+        # creates the file only if the command has to be run just once...
+        if not self._always_run:
+            with open(get_full_path(self._hash), "w") as file:
+                file.writelines(self._command)
 
     # prints the command's status, whether it will be executed or not
     def dryrun(self):
-        print((blue("always") if self._always_run else blue("  todo") if self.todo() else green("  done")),
-              self._command)
+        print(blue("always") if self._always_run else blue("  todo") if self._todo() else green("  done"), self._command)
 
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
     # in "retry" mode, should a command fail, waits for a few seconds before trying it again
     def run(self, step, retry):
-        if self._always_run or self.todo():
+        if self._always_run or self._todo():
             if step:
                 print(blue("next:"), self._command)
                 print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
-
                 choice = sys.stdin.readline().strip()
                 if choice == "e":
                     print(blue("executing"))
@@ -118,34 +107,25 @@ class Command:
                 print(blue("executing"), self._command)
 
             # initializes the maximum number of times we try to run the command
-            try_number = 1 + (config.retry_number if retry else 0)
-            while try_number:
-                try_number = try_number - 1
-
+            tries = (retry_number if retry else 0) + 1
+            while tries:
+                tries = tries - 1
                 # opens a subshell to execute the command, and prints stdout and stderr lines as they come
                 sp = subprocess.Popen(self._command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
                 sp.wait()
-
                 # if the run is successful...
                 if sp.returncode == 0:
                     self._write_idem_file()
                     print(green("done"))
                     return
-                elif try_number:  # if not, and there's still retries to do, we wait before looping again
-                    time.sleep(config.retry_delay)
+                elif tries:  # if not, and there's still retries to do, we wait before looping again
+                    time.sleep(retry_delay)
                     print(blue("retrying"))
                 else:
                     print(red("error"))
                     exit(1)
         else:
             print(green("skipping"), self._command)
-
-    # creates an idem file to mark and log the command's execution
-    def _write_idem_file(self):
-        # creates the file only if the command has to be run just once...
-        if not self._always_run:
-            with open(config.get_full_path(self._hash), "w") as file:
-                file.writelines(self._command)
 
 
 # downloads the commands of a given script
@@ -155,17 +135,15 @@ def download_commands(script):
     commands = []
 
     # downloads the script and loop through each line
-    for line in urllib.request.urlopen(config.get_script_url(script)).read().decode("ascii").splitlines():
-        # if the line begins with ##, it may be a directive, so we analyze its words
-        if line.startswith("##"):
+    for line in urllib.request.urlopen("{0}/scripts/{1}".format(base_url, script)).read().decode("ascii").splitlines():
+        if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
             split = line.rsplit()
-
             if split[1] == "include":
                 # include directive: recursively downloads the given script's commands and adds them to the list
                 commands.extend(download_commands(split[2]))
             elif split[1] == "resource":
                 # resource directive: appends a command that downloads the given file into the given directory
-                commands.append(Command(config.get_resource_command(script, split[2], split[3])))
+                commands.append(Command("wget {0}/resources/{1}/{2} -O {3}/{2}".format(base_url, script, split[2], split[3])))
         elif not line.startswith("#") and not line == "":
             # it's a standard shell command, appends it to the end of the list
             commands.append(Command(line))
@@ -175,10 +153,10 @@ def download_commands(script):
 
 # main function: prints a history of all idem executed commands
 def show_log(args):
-    if os.path.isdir(config.idem_path):
-        for file_name in sorted(os.listdir(config.idem_path), key=config.get_mtime):
-            with open(config.get_full_path(file_name)) as file:
-                print(blue(file_name), green(strformat(config.get_mtime(file_name))), file.read().strip())
+    if os.path.isdir(idem_path):
+        for file_name in sorted(os.listdir(idem_path), key=get_mtime):
+            with open(get_full_path(file_name)) as file:
+                print(blue(file_name), green(strformat(get_mtime(file_name))), file.read().strip())
 
 
 # main function: downloads then runs or tests a given script
@@ -189,8 +167,8 @@ def run_script(args):
         exit(1)
 
     # ensures that idem path exists
-    if not os.path.isdir(config.idem_path):
-        os.makedirs(config.idem_path)
+    if not os.path.isdir(idem_path):
+        os.makedirs(idem_path)
 
     for c in download_commands(args.script):
         c.dryrun() if args.dry else c.run(args.step, args.retry)
@@ -207,42 +185,33 @@ def set_base_url_github(args):
         parser.add_section("config")
 
     # sets the new base url with the given parameters
-    parser.set("config", "base_url",
-               "https://raw.githubusercontent.com/{0}/{1}/{2}".format(args.account, args.repository, args.branch))
+    parser.set("config", "base_url", "https://raw.githubusercontent.com/{0}/{1}/{2}".format(args.account, args.repository, args.branch))
 
     # writes/overwrites the configuration file
     with open(args.filename, "w") as file:
         parser.write(file)
 
 
-# entrypoint
-if __name__ == "__main__":
-    # argumentparser : the best way to handle program arguments in python
-    argparser = argparse.ArgumentParser(
-        description="Lightweight Python-Shell framework for idempotent local provisioning.")
-    subparsers = argparser.add_subparsers()
+# argumentparser : the best way to handle program arguments in python
+argparser = argparse.ArgumentParser(description="Lightweight Python-Shell framework for idempotent local provisioning.")
+subparsers = argparser.add_subparsers()
 
-    parser_log = subparsers.add_parser("log", help="prints a history of all idem.py executed commands")
-    parser_log.set_defaults(func=show_log)
+parser_log = subparsers.add_parser("log", help="prints a history of all idem.py executed commands")
+parser_log.set_defaults(func=show_log)
 
-    parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
-    parser_run.add_argument("script", help="script identifier in the repository")
-    parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
-    parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
-    parser_run.add_argument("--retry", action="store_true",
-                            help="should a command fail, waits for a few seconds before trying it again")
-    parser_run.set_defaults(func=run_script)
+parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
+parser_run.add_argument("script", help="script identifier in the repository")
+parser_run.add_argument("--dry", action="store_true", help="tests the script instead of running it")
+parser_run.add_argument("--step", action="store_true", help="asks confirmation before running each step")
+parser_run.add_argument("--retry", action="store_true", help="should a command fail, waits for a few seconds before trying it again")
+parser_run.set_defaults(func=run_script)
 
-    parser_github = subparsers.add_parser("github",
-                                          help="helper function to easily set the base url to another github account")
-    parser_github.add_argument("account", help="github account name")
-    parser_github.add_argument("repository", nargs="?", default="idem-files",
-                               help="repository name (default: idem-files)")
-    parser_github.add_argument("branch", nargs="?", default="master",
-                               help="repository branch name (default: master)")
-    parser_github.add_argument("filename", nargs="?", default="/etc/idem.conf",
-                               help="configuration file to create/update (default: /etc/idem.conf)")
-    parser_github.set_defaults(func=set_base_url_github)
+parser_github = subparsers.add_parser("github", help="helper function to easily set the base url to another github account")
+parser_github.add_argument("account", help="github account name")
+parser_github.add_argument("repository", nargs="?", default="idem-files", help="repository name (default: idem-files)")
+parser_github.add_argument("branch", nargs="?", default="master", help="repository branch name (default: master)")
+parser_github.add_argument("filename", nargs="?", default="/etc/idem.conf", help="configuration file to create/update (default: /etc/idem.conf)")
+parser_github.set_defaults(func=set_base_url_github)
 
-    args = argparser.parse_args()
-    args.func(args)
+args = argparser.parse_args()
+args.func(args)
