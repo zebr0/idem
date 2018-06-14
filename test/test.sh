@@ -36,10 +36,6 @@ diff tmp/dry_after results/dry_after
 sudo ../src/idem run test > tmp/second_run
 diff tmp/second_run results/second_run
 
-# test
-sudo ../src/idem github mazerty idem-files master tmp/idem.conf
-diff tmp/idem.conf results/idem.conf
-
 # stops the mock server
 kill $(cat tmp/pid) && rm tmp/pid
 
