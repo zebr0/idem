@@ -8,6 +8,7 @@ import os.path
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 
@@ -131,24 +132,28 @@ class Command:
 # downloads the commands of a given script
 # with the "include" directive, can do so recursively
 def download_commands(script):
-    # initializes the resulting Commands' list
-    commands = []
+    try:
+        # initializes the resulting Commands' list
+        commands = []
 
-    # downloads the script and loop through each line
-    for line in urllib.request.urlopen("{0}/scripts/{1}".format(base_url, script)).read().decode("ascii").splitlines():
-        if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
-            split = line.rsplit()
-            if split[1] == "include":
-                # include directive: recursively downloads the given script's commands and adds them to the list
-                commands.extend(download_commands(split[2]))
-            elif split[1] == "resource":
-                # resource directive: appends a command that downloads the given file into the given directory
-                commands.append(Command("wget {0}/resources/{1}/{2} -O {3}/{2}".format(base_url, script, split[2], split[3])))
-        elif not line.startswith("#") and not line == "":
-            # it's a standard shell command, appends it to the end of the list
-            commands.append(Command(line))
+        # downloads the script and loop through each line
+        for line in urllib.request.urlopen("{0}/scripts/{1}".format(base_url, script)).read().decode("ascii").splitlines():
+            if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
+                split = line.rsplit()
+                if split[1] == "include":
+                    # include directive: recursively downloads the given script's commands and adds them to the list
+                    commands.extend(download_commands(split[2]))
+                elif split[1] == "resource":
+                    # resource directive: appends a command that downloads the given file into the given directory
+                    commands.append(Command("wget {0}/resources/{1}/{2} -O {3}/{2}".format(base_url, script, split[2], split[3])))
+            elif not line.startswith("#") and not line == "":
+                # it's a standard shell command, appends it to the end of the list
+                commands.append(Command(line))
 
-    return commands
+        return commands
+    except urllib.error.HTTPError as error:
+        print(red("unknown script:"), script) if error.code == 404 else print(red(str(error)))
+        exit(1)
 
 
 # main function: prints a history of all idem executed commands
