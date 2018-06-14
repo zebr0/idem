@@ -174,22 +174,21 @@ def run_script(args):
         c.dryrun() if args.dry else c.run(args.step, args.retry)
 
 
-# main function: helper function to easily set the base url to another github account
-def set_base_url_github(args):
-    parser = configparser.ConfigParser()
+# main function: helper function to edit the configuration file
+def edit_config(args):
+    # content of the configuration file
+    parser["config"] = {
+        "base_url": base_url,
+        "idem_path": idem_path,
+        "always_run": ";".join(always_run),
+        "retry_number": retry_number,
+        "retry_delay": retry_delay
+    }
 
-    # if the configuration file already exists, reads its content
-    if os.path.isfile(args.filename):
-        parser.read(args.filename)
-    else:  # if not, creates an empty "config" section
-        parser.add_section("config")
-
-    # sets the new base url with the given parameters
-    parser.set("config", "base_url", "https://raw.githubusercontent.com/{0}/{1}/{2}".format(args.account, args.repository, args.branch))
-
-    # writes/overwrites the configuration file
+    # writes/overwrites the configuration file then opens it in the default editor
     with open(args.filename, "w") as file:
         parser.write(file)
+    subprocess.call(["/usr/bin/editor", args.filename])
 
 
 # argumentparser : the best way to handle program arguments in python
@@ -206,12 +205,9 @@ parser_run.add_argument("--step", action="store_true", help="asks confirmation b
 parser_run.add_argument("--retry", action="store_true", help="should a command fail, waits for a few seconds before trying it again")
 parser_run.set_defaults(func=run_script)
 
-parser_github = subparsers.add_parser("github", help="helper function to easily set the base url to another github account")
-parser_github.add_argument("account", help="github account name")
-parser_github.add_argument("repository", nargs="?", default="idem-files", help="repository name (default: idem-files)")
-parser_github.add_argument("branch", nargs="?", default="master", help="repository branch name (default: master)")
-parser_github.add_argument("filename", nargs="?", default="/etc/idem.conf", help="configuration file to create/update (default: /etc/idem.conf)")
-parser_github.set_defaults(func=set_base_url_github)
+parser_config = subparsers.add_parser("config", help="helper function to edit the configuration file")
+parser_config.add_argument("filename", nargs="?", default="/etc/idem.conf", help="configuration file to create/update (default: /etc/idem.conf)")
+parser_config.set_defaults(func=edit_config)
 
 args = argparser.parse_args()
 args.func(args)
