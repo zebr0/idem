@@ -29,7 +29,7 @@ def red(string): return "\033[91m" + string + "\033[0m"
 
 
 # returns the full path of an idem file
-def get_full_path(file): return os.path.join(idem_path, file)
+def get_full_path(file): return os.path.join(args.directory, file)
 
 
 # returns the mtime of an idem file
@@ -46,7 +46,7 @@ class Command:
         self._hash = hashlib.md5(self._command.encode("ascii")).hexdigest()
 
         # is it always supposed to be run ?
-        self._always_run = any(filter(lambda a: a in self._command, always_run))
+        self._always_run = any(filter(lambda a: a in self._command, ["apt-get update", "apt update"]))
 
     # has the command ever been run before ?
     def _todo(self):
@@ -66,9 +66,9 @@ class Command:
     # executes the command if it hasn't been executed yet
     # in "step" mode, asks confirmation before running each step
     # in "retry" mode, should a command fail, waits for a few seconds before trying it again
-    def run(self, step, retry):
+    def run(self):
         if self._always_run or self._todo():
-            if step:
+            if args.step:
                 print(blue("next:"), self._command)
                 print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
                 choice = sys.stdin.readline().strip()
@@ -88,7 +88,7 @@ class Command:
                 print(blue("executing"), self._command)
 
             # initializes the maximum number of times we try to run the command
-            tries = (retry_number if retry else 0) + 1
+            tries = 4 if args.retry else 1
             while tries:
                 tries = tries - 1
                 # opens a subshell to execute the command, and prints stdout and stderr lines as they come
@@ -100,7 +100,7 @@ class Command:
                     print(green("done"))
                     return
                 elif tries:  # if not, and there's still retries to do, we wait before looping again
-                    time.sleep(retry_delay)
+                    time.sleep(10)
                     print(blue("retrying"))
                 else:
                     print(red("error"))
@@ -137,9 +137,9 @@ def download_commands(script):
 
 
 # main function: prints a history of all idem executed commands
-def show_log():
-    if os.path.isdir(idem_path):
-        for file_name in sorted(os.listdir(idem_path), key=get_mtime):
+def show_history():
+    if os.path.isdir(args.directory):
+        for file_name in sorted(os.listdir(args.directory), key=get_mtime):
             with open(get_full_path(file_name)) as file:
                 print(blue(file_name), green(strformat(get_mtime(file_name))), file.read().strip())
 
@@ -151,19 +151,20 @@ def run_script():
         print(red("root privileges required to run commands"))
         exit(1)
 
-    # ensures that idem path exists
-    if not os.path.isdir(idem_path):
-        os.makedirs(idem_path)
+    # ensures that history path exists
+    if not os.path.isdir(args.directory):
+        os.makedirs(args.directory)
 
     for c in download_commands(args.script):
-        c.dryrun() if args.dry else c.run(args.step, args.retry)
+        c.dryrun() if args.dry else c.run()
 
 
 argparser = zebr0.ArgumentParser(description="Lightweight Python-Shell framework for idempotent local provisioning.")
+argparser.add_argument("-d", "--directory", nargs="?", default="/var/zebr0/history")
+
 subparsers = argparser.add_subparsers()
 
-parser_log = subparsers.add_parser("log", help="prints a history of all executed commands")
-parser_log.set_defaults(func=show_log)
+subparsers.add_parser("history", help="prints a history of all executed commands").set_defaults(func=show_history)
 
 parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
 parser_run.add_argument("script", help="script identifier in the repository")
