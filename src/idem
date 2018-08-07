@@ -117,7 +117,7 @@ def download_commands(script):
         commands = []
 
         # downloads the script and loop through each line
-        for line in urllib.request.urlopen("{0}/scripts/{1}".format(base_url, script)).read().decode("ascii").splitlines():
+        for line in zebr0_service.lookup(script + "/script").splitlines():
             if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
                 split = line.rsplit()
                 if split[1] == "include":
@@ -125,7 +125,7 @@ def download_commands(script):
                     commands.extend(download_commands(split[2]))
                 elif split[1] == "resource":
                     # resource directive: appends a command that downloads the given file into the given directory
-                    commands.append(Command("wget {0}/resources/{1}/{2} -O {3}/{2}".format(base_url, script, split[2], split[3])))
+                    commands.append(Command("zebr0-lookup {0}/{1} > {2}/{1}".format(script, split[2], split[3])))
             elif not line.startswith("#") and not line == "":
                 # it's a standard shell command, appends it to the end of the list
                 commands.append(Command(line))
@@ -174,4 +174,5 @@ parser_run.add_argument("--retry", action="store_true", help="should a command f
 parser_run.set_defaults(func=run_script)
 
 args = argparser.parse_args()
+zebr0_service = zebr0.Service(args)
 args.func()
