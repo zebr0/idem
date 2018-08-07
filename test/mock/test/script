@@ -1,6 +1,4 @@
 echo "1"
-echo "always1"
-echo "always2"
 ## include include
 echo "1" > tmp/retry
 retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
