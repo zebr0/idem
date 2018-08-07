@@ -1,4 +1,3 @@
 echo "1"
-## include include
 echo "1" > tmp/retry
 retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]

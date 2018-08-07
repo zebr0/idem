@@ -1,11 +1,6 @@
 [94mexecuting[0m echo "1"
 1
 [92mdone[0m
-[94mexecuting[0m echo "2"
-2
-[92mdone[0m
-[94mexecuting[0m zebr0-lookup script-include-resource > tmp/resource
-[92mdone[0m
 [94mexecuting[0m echo "1" > tmp/retry
 [92mdone[0m
 [94mexecuting[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]

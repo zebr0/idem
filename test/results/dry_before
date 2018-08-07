@@ -1,5 +1,3 @@
 [94m  todo[0m echo "1"
-[94m  todo[0m echo "2"
-[94m  todo[0m zebr0-lookup script-include-resource > tmp/resource
 [94m  todo[0m echo "1" > tmp/retry
 [94m  todo[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
