@@ -14,6 +14,9 @@ echo $! > ../tmp/pid
 sleep 1
 cd ..
 
+# initializes zebr0 configuration
+sudo zebr0-init -u http://localhost:8000 -p dummy_project -s dummy_stage
+
 # test dry output before run
 sudo ../src/idem -d tmp/idem run test --dry > tmp/dry_before
 diff tmp/dry_before results/dry_before

@@ -3,6 +3,7 @@
 import datetime
 import hashlib
 import os.path
+import pathlib
 import subprocess
 import sys
 import time
@@ -26,111 +27,98 @@ def green(string): return "\033[92m" + string + "\033[0m"
 def red(string): return "\033[91m" + string + "\033[0m"
 
 
-# returns the full path of an idem file
+# returns the full path of a history file
 def get_full_path(file): return os.path.join(args.directory, file)
 
 
-# returns the mtime of an idem file
+# returns the mtime of a history file
 def get_mtime(file): return os.path.getmtime(get_full_path(file))
 
 
-# represents a command about to be executed
-class Command:
-    def __init__(self, command):
-        # the command itself
-        self._command = command
+# returns the md5 hash of a command
+def md5(command): return hashlib.md5(command.encode("utf-8")).hexdigest()
 
-        # its md5 hash
-        self._hash = hashlib.md5(self._command.encode("ascii")).hexdigest()
 
-        # is it always supposed to be run ?
-        self._always_run = any(filter(lambda a: a in self._command, ["apt-get update", "apt update"]))
+# returns if a command must always be run
+def always_run(command): return any(filter(lambda a: a in command, ["apt-get update", "apt update"]))
 
-    # has the command ever been run before ?
-    def _todo(self):
-        return not os.path.isfile(get_full_path(self._hash))
 
-    # creates an idem file to mark and log the command's execution
-    def _write_idem_file(self):
-        # creates the file only if the command has to be run just once...
-        if not self._always_run:
-            with open(get_full_path(self._hash), "w") as file:
-                file.writelines(self._command)
+# returns if the command has already been run before (i.e. has a history file)
+def todo(command): return not os.path.isfile(get_full_path(md5(command)))
 
-    # prints the command's status, whether it will be executed or not
-    def dryrun(self):
-        print(blue("always") if self._always_run else blue("  todo") if self._todo() else green("  done"), self._command)
 
-    # executes the command if it hasn't been executed yet
-    # in "step" mode, asks confirmation before running each step
-    # in "retry" mode, should a command fail, waits for a few seconds before trying it again
-    def run(self):
-        if self._always_run or self._todo():
-            if args.step:
-                print(blue("next:"), self._command)
-                print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
-                choice = sys.stdin.readline().strip()
-                if choice == "e":
-                    print(blue("executing"))
-                elif choice == "s":
-                    print(green("skipped"))
-                    return
-                elif choice == "p":
-                    self._write_idem_file()
-                    print(green("skipped"))
-                    return
-                else:
-                    print(red("aborting"))
-                    exit(0)
-            else:
-                print(blue("executing"), self._command)
+# creates a history file to log the command's execution
+def write_history_file(command):
+    # creates the file only if the command has to be run just once
+    if not always_run(command):
+        pathlib.Path(get_full_path(md5(command))).write_text(command)
 
-            # initializes the maximum number of times we try to run the command
-            tries = 4 if args.retry else 1
-            while tries:
-                tries = tries - 1
-                # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-                sp = subprocess.Popen(self._command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-                sp.wait()
-                # if the run is successful...
-                if sp.returncode == 0:
-                    self._write_idem_file()
-                    print(green("done"))
-                    return
-                elif tries:  # if not, and there's still retries to do, we wait before looping again
-                    time.sleep(10)
-                    print(blue("retrying"))
-                else:
-                    print(red("error"))
-                    exit(1)
+
+# prints the command's status, whether it will be executed or not
+def dryrun(command):
+    print(blue("always") if always_run(command) else blue("  todo") if todo(command) else green("  done"), command)
+
+
+# executes the command if it hasn't been executed yet
+# in "step" mode, asks confirmation before running each step
+# in "retry" mode, should a command fail, waits for a few seconds before trying it again
+def run(command):
+    if always_run(command) or todo(command):
+        if args.step:
+            print(blue("next:"), command)
+            print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
+
+            choice = sys.stdin.readline().strip()
+            if choice == "e":
+                print(blue("executing"))
+            elif choice == "s":
+                print(green("skipped"))
+                return
+            elif choice == "p":  # to always skip a command, we write a history file even if the command hasn't been executed
+                write_history_file(command)
+                print(green("skipped"))
+                return
+            else:  # choice "a"
+                print(red("aborting"))
+                exit(0)
         else:
-            print(green("skipping"), self._command)
+            print(blue("executing"), command)
+
+        # initializes the maximum number of times we try to run the command
+        tries = 4 if args.retry else 1
+        while tries:
+            tries = tries - 1
+
+            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
+            sp = subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+            sp.wait()
+
+            # if the run is successful...
+            if sp.returncode == 0:
+                write_history_file(command)
+                print(green("done"))
+                return
+            elif tries:  # if not, and there's still retries to do, we wait before looping again
+                time.sleep(10)
+                print(blue("retrying"))
+            else:
+                print(red("error"))
+                exit(1)
+    else:
+        print(green("skipping"), command)
 
 
-# downloads the commands of a given script
-def download_commands():
-    # initializes the resulting Commands' list
-    commands = []
-
-    # downloads the script and loop through each line
-    for line in zebr0_service.lookup("script-" + args.script).splitlines():
-        if not line.startswith("#") and not line == "":  # filters out comments and empty lines
-            commands.append(Command(line))
-
-    return commands
-
-
-# main function: prints a history of all idem executed commands
+# main function: prints a history of all executed commands
 def show_history():
     if os.path.isdir(args.directory):
-        for file_name in sorted(os.listdir(args.directory), key=get_mtime):
-            with open(get_full_path(file_name)) as file:
-                print(blue(file_name), green(strformat(get_mtime(file_name))), file.read().strip())
+        for filename in sorted(os.listdir(args.directory), key=get_mtime):
+            with open(get_full_path(filename)) as file:
+                print(blue(filename), green(strformat(get_mtime(filename))), file.read().strip())
 
 
 # main function: downloads then runs or tests a given script
 def run_script():
-    # ensures that idem is run as root
+    # ensures that the program is run as root
     if os.geteuid() != 0:
         print(red("root privileges required to run commands"))
         exit(1)
@@ -139,15 +127,15 @@ def run_script():
     if not os.path.isdir(args.directory):
         os.makedirs(args.directory)
 
-    for c in download_commands():
-        c.dryrun() if args.dry else c.run()
+    for command in zebr0_service.lookup(args.script).splitlines():
+        if command and not command.startswith("#"):  # filters out empty lines and comments
+            dryrun(command) if args.dry else run(command)
 
 
-argparser = zebr0.ArgumentParser(description="Lightweight Python-Shell framework for idempotent local provisioning.")
-argparser.add_argument("-d", "--directory", nargs="?", default="/var/zebr0/history")
+argparser = zebr0.ArgumentParser(description="Lightweight idempotent local provisioning.")
+argparser.add_argument("-d", "--directory", nargs="?", default="/var/zebr0/history", help="path to the history files directory (default: /var/zebr0/history)")
 
 subparsers = argparser.add_subparsers()
-
 subparsers.add_parser("history", help="prints a history of all executed commands").set_defaults(func=show_history)
 
 parser_run = subparsers.add_parser("run", help="downloads then runs or tests a given script")
@@ -158,5 +146,6 @@ parser_run.add_argument("--retry", action="store_true", help="should a command f
 parser_run.set_defaults(func=run_script)
 
 args = argparser.parse_args()
+
 zebr0_service = zebr0.Service(args)
 args.func()
