@@ -23,10 +23,10 @@ sudo ../src/idem -d tmp/idem run test --retry > tmp/first_run
 diff tmp/first_run results/first_run
 diff tmp/idem/f4fc192a9bb717d392c21bda92b930ba results/idem/f4fc192a9bb717d392c21bda92b930ba
 diff tmp/idem/55802db65c9fe6f2e052fb91b56f3249 results/idem/55802db65c9fe6f2e052fb91b56f3249
-diff tmp/idem/ddb497a98e908476a4af7f1033695d9d results/idem/ddb497a98e908476a4af7f1033695d9d
+diff tmp/idem/551470ec160d21b436ec4603e052a92e results/idem/551470ec160d21b436ec4603e052a92e
 diff tmp/idem/2e319d8e37e1a0293ab8680413aba8b1 results/idem/2e319d8e37e1a0293ab8680413aba8b1
 diff tmp/idem/33d97341f7e26ce567dce8c078d26f74 results/idem/33d97341f7e26ce567dce8c078d26f74
-diff tmp/resource mock/include/resource
+diff tmp/resource mock/script-include-resource
 
 # test dry output after run
 sudo ../src/idem -d tmp/idem run test --dry > tmp/dry_after

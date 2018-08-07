@@ -1,5 +1,5 @@
 [92mskipping[0m echo "1"
 [92mskipping[0m echo "2"
-[92mskipping[0m zebr0-lookup include/resource > tmp/resource
+[92mskipping[0m zebr0-lookup script-include-resource > tmp/resource
 [92mskipping[0m echo "1" > tmp/retry
 [92mskipping[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]

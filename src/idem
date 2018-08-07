@@ -6,8 +6,6 @@ import os.path
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 
 import zebr0
 
@@ -112,28 +110,24 @@ class Command:
 # downloads the commands of a given script
 # with the "include" directive, can do so recursively
 def download_commands(script):
-    try:
-        # initializes the resulting Commands' list
-        commands = []
+    # initializes the resulting Commands' list
+    commands = []
 
-        # downloads the script and loop through each line
-        for line in zebr0_service.lookup(script + "/script").splitlines():
-            if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
-                split = line.rsplit()
-                if split[1] == "include":
-                    # include directive: recursively downloads the given script's commands and adds them to the list
-                    commands.extend(download_commands(split[2]))
-                elif split[1] == "resource":
-                    # resource directive: appends a command that downloads the given file into the given directory
-                    commands.append(Command("zebr0-lookup {0}/{1} > {2}/{1}".format(script, split[2], split[3])))
-            elif not line.startswith("#") and not line == "":
-                # it's a standard shell command, appends it to the end of the list
-                commands.append(Command(line))
+    # downloads the script and loop through each line
+    for line in zebr0_service.lookup("script-" + script).splitlines():
+        if line.startswith("##"):  # if the line begins with ##, it may be a directive, so we analyze its words
+            split = line.rsplit()
+            if split[1] == "include":
+                # include directive: recursively downloads the given script's commands and adds them to the list
+                commands.extend(download_commands(split[2]))
+            elif split[1] == "resource":
+                # resource directive: appends a command that downloads the given file into the given directory
+                commands.append(Command("zebr0-lookup script-{0}-{1} > {2}/{1}".format(script, split[2], split[3])))
+        elif not line.startswith("#") and not line == "":
+            # it's a standard shell command, appends it to the end of the list
+            commands.append(Command(line))
 
-        return commands
-    except urllib.error.HTTPError as error:
-        print(red("unknown script:"), script) if error.code == 404 else print(red(str(error)))
-        exit(1)
+    return commands
 
 
 # main function: prints a history of all idem executed commands
