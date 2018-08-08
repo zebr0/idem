@@ -1,22 +1,5 @@
-idem (2.0.0-0ubuntu1) bionic; urgency=medium
-
-  * cleaned up some code
-  * removed templ as a dependency (potential breaking change)
-  * reworked the helper function to be less specific
-  * added proper error handling
-
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Fri, 15 Jun 2018 11:00:00 +0100
-
-idem (1.1.0-0ubuntu1) xenial; urgency=medium
-
-  * cleaned up some conf properties
-  * bugfix: script name is mandatory
-  * added a helper function to easily set the base url to another github account
-
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Mon, 26 Feb 2018 14:45:00 +0100
-
-idem (1.0.0-0ubuntu1) xenial; urgency=medium
+zebr0-script (0.1.0-0ubuntu1) bionic; urgency=medium
 
   * Initial release
 
- -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Mon, 19 Feb 2018 20:30:00 +0100
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Wed, 08 Aug 2018 11:00:00 +0100

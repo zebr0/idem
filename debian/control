@@ -1,11 +1,11 @@
-Source: idem
+Source: zebr0-script
 Section: admin
 Priority: optional
 Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
 Build-Depends: debhelper (>=9)
 Standards-Version: 3.9.7
 
-Package: idem
+Package: zebr0-script
 Architecture: all
-Depends: ${misc:Depends}, python3
-Description: Lightweight Python-Shell framework for idempotent local provisioning
+Depends: ${misc:Depends}, python3, zebr0-core
+Description: Lightweight idempotent local provisioning

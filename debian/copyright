@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: idem
-Source: https://github.com/zebr0/idem
+Upstream-Name: zebr0-script
+Source: https://github.com/zebr0/zebr0-script
 
 Files: *
 Copyright: 2018 zebr0
