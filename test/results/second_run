@@ -1,3 +1,6 @@
 [92mskipping[0m echo "1"
 [92mskipping[0m echo "1" > tmp/retry
 [92mskipping[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
+[94mexecuting[0m sudo ../src/zebr0-script -c tmp -d tmp/history run include
+[92mskipping[0m echo "2"
+[92mdone[0m

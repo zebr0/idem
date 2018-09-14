@@ -41,7 +41,7 @@ def md5(command): return hashlib.md5(command.encode("utf-8")).hexdigest()
 
 
 # returns if a command must always be run
-def always_run(command): return any(filter(lambda a: a in command, ["apt-get update", "apt update"]))
+def always_run(command): return any(filter(lambda a: a in command, ["apt-get update", "apt update", "zebr0-script"]))
 
 
 # returns if the command has already been run before (i.e. has a history file)

@@ -7,3 +7,8 @@
 [94mretrying[0m
 [94mretrying[0m
 [92mdone[0m
+[94mexecuting[0m sudo ../src/zebr0-script -c tmp -d tmp/history run include
+[94mexecuting[0m echo "2"
+2
+[92mdone[0m
+[92mdone[0m
