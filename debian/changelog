@@ -1,3 +1,12 @@
+zebr0-script (0.2.0-0ubuntu1) bionic; urgency=medium
+
+  * dropped the subparsers because it messes up with the common arguments
+  * now tests use a local configuration instead of overwriting the machine's
+  * uses the logging api when relevant
+  * ensure that every included subscript will be checked everytime
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Wed, 14 Sep 2018 16:30:00 +0100
+
 zebr0-script (0.1.0-0ubuntu1) bionic; urgency=medium
 
   * Initial release
