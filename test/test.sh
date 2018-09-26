@@ -15,7 +15,7 @@ sleep 1
 cd ..
 
 # initializes zebr0 configuration
-sudo zebr0-init -c tmp -u http://localhost:8000 -p dummy_project -s dummy_stage
+zebr0-init -c tmp -u http://localhost:8000 -p dummy_project -s dummy_stage
 
 # test dry output before run
 sudo ../src/zebr0-script -c tmp -d tmp/history run test --dry > tmp/dry_before
