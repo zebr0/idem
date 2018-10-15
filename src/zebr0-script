@@ -62,7 +62,6 @@ def dryrun(command):
 
 # executes the command if it hasn't been executed yet
 # in "step" mode, asks confirmation before running each step
-# in "retry" mode, should a command fail, waits for a few seconds before trying it again
 def execute(command):
     if always_run(command) or todo(command):
         if args.step:
@@ -86,7 +85,7 @@ def execute(command):
             print(blue("executing"), command)
 
         # initializes the maximum number of times we try to run the command
-        tries = 4 if args.retry else 1
+        tries = 4
         while tries:
             tries = tries - 1
 
@@ -140,7 +139,6 @@ argparser.add_argument("command", choices=["history", "run"])
 argparser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
 argparser.add_argument("--dry", action="store_true", help="tests the script instead of running it")
 argparser.add_argument("--step", action="store_true", help="asks confirmation before running each step")
-argparser.add_argument("--retry", action="store_true", help="should a command fail, waits for a few seconds before trying it again")
 
 args = argparser.parse_args()
 

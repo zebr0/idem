@@ -22,7 +22,7 @@ sudo ../src/zebr0-script -c tmp -d tmp/history run test --dry > tmp/dry_before
 diff tmp/dry_before results/dry_before
 
 # test first run
-sudo ../src/zebr0-script -c tmp -d tmp/history run test --retry > tmp/first_run
+sudo ../src/zebr0-script -c tmp -d tmp/history run test > tmp/first_run
 diff tmp/first_run results/first_run
 diff tmp/history/f4fc192a9bb717d392c21bda92b930ba results/history/f4fc192a9bb717d392c21bda92b930ba
 diff tmp/history/2e319d8e37e1a0293ab8680413aba8b1 results/history/2e319d8e37e1a0293ab8680413aba8b1
