@@ -13,7 +13,7 @@ import zebr0
 
 
 # formats given time in a human-readable way
-def strformat(time): return datetime.datetime.fromtimestamp(time).strftime("%c")
+def strformat(timestamp): return datetime.datetime.fromtimestamp(timestamp).strftime("%c")
 
 
 # turns given text in blue
