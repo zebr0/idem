@@ -1,4 +1,5 @@
 echo "1"
 echo "1" > tmp/retry
 retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
-sudo ../src/zebr0-script -c tmp -d tmp/history run include
+## script include
+## lookup lookup tmp/lookup

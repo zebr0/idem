@@ -40,30 +40,26 @@ def get_mtime(file): return os.path.getmtime(get_full_path(file))
 def md5(command): return hashlib.md5(command.encode("utf-8")).hexdigest()
 
 
-# returns if a command must always be run
-def always_run(command): return any(filter(lambda a: a in command, ["apt-get update", "apt update", "zebr0-script"]))
-
-
 # returns if the command has already been run before (i.e. has a history file)
 def todo(command): return not os.path.isfile(get_full_path(md5(command)))
 
 
 # creates a history file to log the command's execution
 def write_history_file(command):
-    # creates the file only if the command has to be run just once
-    if not always_run(command):
-        pathlib.Path(get_full_path(md5(command))).write_text(command)
+    pathlib.Path(get_full_path(md5(command))).write_text(command)
 
 
 # prints the command's status, whether it will be executed or not
 def dryrun(command):
-    print(blue("always") if always_run(command) else blue("  todo") if todo(command) else green("  done"), command)
+    print(blue("  todo") if todo(command) else green("  done"), command)
 
 
 # executes the command if it hasn't been executed yet
 # in "step" mode, asks confirmation before running each step
 def execute(command):
-    if always_run(command) or todo(command):
+    if not todo(command):
+        print(green("skipping"), command)
+    else:
         if args.step:
             print(blue("next:"), command)
             print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
@@ -104,8 +100,6 @@ def execute(command):
             else:
                 print(red("error"))
                 exit(1)
-    else:
-        print(green("skipping"), command)
 
 
 # main function: prints a history of all executed commands
@@ -127,9 +121,24 @@ def run():
     if not os.path.isdir(args.directory):
         os.makedirs(args.directory)
 
-    for command in zebr0_service.lookup(args.script).splitlines():
-        if command and not command.startswith("#"):  # filters out empty lines and comments
+    recursive(args.script)
+
+
+def recursive(script):
+    for command in zebr0_service.lookup(script).splitlines():
+        if command.startswith("## "):
+            split = command.rsplit()
+            if split[1] == "script" and len(split) == 3:
+                recursive(split[2])
+            elif split[1] == "lookup" and len(split) == 4:
+                dryrun(command) if args.dry else lookup(split[2], split[3], command)
+        elif command and not command.startswith("#"):  # filters out empty lines and regular comments
             dryrun(command) if args.dry else execute(command)
+
+
+def lookup(key, path, command):
+    pathlib.Path(path).write_text(zebr0_service.lookup(key, strip=False))
+    write_history_file(command)
 
 
 argparser = zebr0.ArgumentParser(description="Lightweight idempotent local provisioning.")
@@ -141,7 +150,6 @@ argparser.add_argument("--dry", action="store_true", help="tests the script inst
 argparser.add_argument("--step", action="store_true", help="asks confirmation before running each step")
 
 args = argparser.parse_args()
-
 zebr0_service = zebr0.Service(args)
 
 # calls the method given as parameter
