@@ -1,3 +1,11 @@
+zebr0-script (0.3.0-0ubuntu1) bionic; urgency=medium
+
+  * retry mode is now by default
+  * the "always_run" has been removed
+  * reinstated the directives for script inclusion and file lookup
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Wed, 18 Oct 2018 14:45:00 +0100
+
 zebr0-script (0.2.0-0ubuntu1) bionic; urgency=medium
 
   * dropped the subparsers because it messes up with the common arguments
