@@ -2,3 +2,4 @@
 [92mskipping[0m echo "1" > tmp/retry
 [92mskipping[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
 [92mskipping[0m echo "2"
+[92mskipping[0m ## lookup lookup tmp/lookup

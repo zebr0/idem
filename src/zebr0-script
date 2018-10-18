@@ -49,15 +49,13 @@ def write_history_file(command):
     pathlib.Path(get_full_path(md5(command))).write_text(command)
 
 
-# prints the command's status, whether it will be executed or not
-def dryrun(command):
-    print(blue("  todo") if todo(command) else green("  done"), command)
-
-
 # executes the command if it hasn't been executed yet
+# in "dry" mode, prints the command's status, whether it will be executed or not
 # in "step" mode, asks confirmation before running each step
-def execute(command):
-    if not todo(command):
+def handle(command):
+    if args.dry:
+        print(blue("  todo") if todo(command) else green("  done"), command)
+    elif not todo(command):
         print(green("skipping"), command)
     else:
         if args.step:
@@ -85,12 +83,7 @@ def execute(command):
         while tries:
             tries = tries - 1
 
-            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            sp = subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-            sp.wait()
-
-            # if the run is successful...
-            if sp.returncode == 0:
+            if execute(command):
                 write_history_file(command)
                 print(green("done"))
                 return
@@ -100,6 +93,21 @@ def execute(command):
             else:
                 print(red("error"))
                 exit(1)
+
+
+def execute(command):
+    if command.startswith("## lookup "):
+        try:
+            split = command.rsplit()
+            return pathlib.Path(split[3]).write_text(zebr0_service.lookup(split[2], strip=False))
+        except LookupError as error:
+            print(red(str(error)))
+            return False
+    else:
+        # opens a subshell to execute the command, and prints stdout and stderr lines as they come
+        sp = subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
+        sp.wait()
+        return sp.returncode == 0
 
 
 # main function: prints a history of all executed commands
@@ -126,19 +134,10 @@ def run():
 
 def recursive(script):
     for command in zebr0_service.lookup(script).splitlines():
-        if command.startswith("## "):
-            split = command.rsplit()
-            if split[1] == "script" and len(split) == 3:
-                recursive(split[2])
-            elif split[1] == "lookup" and len(split) == 4:
-                dryrun(command) if args.dry else lookup(split[2], split[3], command)
-        elif command and not command.startswith("#"):  # filters out empty lines and regular comments
-            dryrun(command) if args.dry else execute(command)
-
-
-def lookup(key, path, command):
-    pathlib.Path(path).write_text(zebr0_service.lookup(key, strip=False))
-    write_history_file(command)
+        if command.startswith("## script "):
+            recursive(command.rsplit()[2])
+        elif command and (command.startswith("## lookup ") or not command.startswith("#")):  # filters out empty lines and regular comments
+            handle(command)
 
 
 argparser = zebr0.ArgumentParser(description="Lightweight idempotent local provisioning.")

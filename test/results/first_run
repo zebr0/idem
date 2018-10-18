@@ -10,3 +10,5 @@
 [94mexecuting[0m echo "2"
 2
 [92mdone[0m
+[94mexecuting[0m ## lookup lookup tmp/lookup
+[92mdone[0m
