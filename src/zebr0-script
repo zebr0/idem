@@ -49,6 +49,36 @@ def write_history_file(command):
     pathlib.Path(get_full_path(md5(command))).write_text(command)
 
 
+# main function: prints a history of all executed commands
+def history():
+    if os.path.isdir(args.directory):
+        for filename in sorted(os.listdir(args.directory), key=get_mtime):
+            with open(get_full_path(filename)) as file:
+                print(blue(filename), green(strformat(get_mtime(filename))), file.read().strip())
+
+
+# main function: downloads then runs or tests a given script
+def run():
+    # ensures that the program is run as root
+    if os.geteuid() != 0:
+        logging.getLogger("zebr0-script").error("root privileges required to run commands")
+        exit(1)
+
+    # ensures that history path exists
+    if not os.path.isdir(args.directory):
+        os.makedirs(args.directory)
+
+    recursive(args.script)
+
+
+def recursive(script):
+    for command in zebr0_service.lookup(script).splitlines():
+        if command.startswith("## script "):
+            recursive(command.rsplit()[2])
+        elif command and (command.startswith("## lookup ") or not command.startswith("#")):  # filters out empty lines and regular comments
+            handle(command)
+
+
 # executes the command if it hasn't been executed yet
 # in "dry" mode, prints the command's status, whether it will be executed or not
 # in "step" mode, asks confirmation before running each step
@@ -108,36 +138,6 @@ def execute(command):
         sp = subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
         sp.wait()
         return sp.returncode == 0
-
-
-# main function: prints a history of all executed commands
-def history():
-    if os.path.isdir(args.directory):
-        for filename in sorted(os.listdir(args.directory), key=get_mtime):
-            with open(get_full_path(filename)) as file:
-                print(blue(filename), green(strformat(get_mtime(filename))), file.read().strip())
-
-
-# main function: downloads then runs or tests a given script
-def run():
-    # ensures that the program is run as root
-    if os.geteuid() != 0:
-        logging.getLogger("zebr0-script").error("root privileges required to run commands")
-        exit(1)
-
-    # ensures that history path exists
-    if not os.path.isdir(args.directory):
-        os.makedirs(args.directory)
-
-    recursive(args.script)
-
-
-def recursive(script):
-    for command in zebr0_service.lookup(script).splitlines():
-        if command.startswith("## script "):
-            recursive(command.rsplit()[2])
-        elif command and (command.startswith("## lookup ") or not command.startswith("#")):  # filters out empty lines and regular comments
-            handle(command)
 
 
 argparser = zebr0.ArgumentParser(description="Lightweight idempotent local provisioning.")
