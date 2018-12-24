@@ -1,0 +1,11 @@
+[94mexecuting[0m sleep 3
+[92mdone[0m
+[94mexecuting[0m ## lookup wrong-lookup tmp/dummy
+[91mHTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /dummy_project/dummy_stage/wrong-lookup (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xFFFF>: Failed to establish a new connection: [Errno 111] Connection refused',))[0m
+[94mretrying[0m
+[91mHTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /dummy_project/dummy_stage/wrong-lookup (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xFFFF>: Failed to establish a new connection: [Errno 111] Connection refused',))[0m
+[94mretrying[0m
+[91mHTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /dummy_project/dummy_stage/wrong-lookup (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xFFFF>: Failed to establish a new connection: [Errno 111] Connection refused',))[0m
+[94mretrying[0m
+[91mHTTPConnectionPool(host='localhost', port=8000): Max retries exceeded with url: /dummy_project/dummy_stage/wrong-lookup (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0xFFFF>: Failed to establish a new connection: [Errno 111] Connection refused',))[0m
+[91merror[0m

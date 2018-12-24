@@ -46,8 +46,13 @@ diff tmp/ko-script results/ko-script
 sudo ../src/zebr0-script -c tmp -d tmp/history run test-ko-lookup > tmp/ko-lookup || true
 diff tmp/ko-lookup results/ko-lookup
 
-# stops the mock server
-kill $(cat tmp/pid) && rm tmp/pid
+# stops the mock server in a few seconds, to make the following test fail
+echo "sleep 2 && kill $(cat tmp/pid) && rm tmp/pid" | at now
+
+# test connection ko
+sudo ../src/zebr0-script -c tmp -d tmp/history run test-ko-connection > tmp/ko-connection-dirty || true
+sed "s/0x.*>/0xFFFF>/g" tmp/ko-connection-dirty > tmp/ko-connection-clean
+diff tmp/ko-connection-clean results/ko-connection-clean
 
 # cleans tmp directory
 sudo rm -rf tmp

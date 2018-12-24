@@ -130,8 +130,8 @@ def execute(command):
         try:
             split = command.rsplit()
             return pathlib.Path(split[3]).write_text(zebr0_service.lookup(split[2], strip=False))
-        except LookupError as error:
-            print(red(str(error)))
+        except Exception as exception:
+            print(red(str(exception)))
             return False
     else:
         # opens a subshell to execute the command, and prints stdout and stderr lines as they come
