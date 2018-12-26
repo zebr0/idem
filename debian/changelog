@@ -1,3 +1,10 @@
+zebr0-script (0.4.0-0ubuntu1) bionic; urgency=medium
+
+  * catch any exception to better handle lookup errors
+  * light refactor
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Wed, 26 Dec 2018 14:25:00 +0100
+
 zebr0-script (0.3.0-0ubuntu1) bionic; urgency=medium
 
   * retry mode is now by default
