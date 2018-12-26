@@ -1,7 +1,7 @@
 #!/bin/sh -ex
 
 # cleans a potentially failed previous test run
-[ -f tmp/pid ] && kill $(cat tmp/pid)
+[ -f tmp/pid ] && [ -d /proc/$(cat tmp/pid) ] && kill $(cat tmp/pid)
 [ -d tmp/ ] && sudo rm -rf tmp/
 
 # creates tmp directory
@@ -28,6 +28,7 @@ diff tmp/history/f4fc192a9bb717d392c21bda92b930ba results/history/f4fc192a9bb717
 diff tmp/history/2e319d8e37e1a0293ab8680413aba8b1 results/history/2e319d8e37e1a0293ab8680413aba8b1
 diff tmp/history/33d97341f7e26ce567dce8c078d26f74 results/history/33d97341f7e26ce567dce8c078d26f74
 diff tmp/history/55802db65c9fe6f2e052fb91b56f3249 results/history/55802db65c9fe6f2e052fb91b56f3249
+diff tmp/history/c11bd38dad44c0074dbb5b7ea6a9e8ae results/history/c11bd38dad44c0074dbb5b7ea6a9e8ae
 diff tmp/lookup mock/lookup
 
 # test dry output after run
