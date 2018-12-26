@@ -108,16 +108,13 @@ def handle(command):
         else:
             print(blue("executing"), command)
 
-        # initializes the maximum number of times we try to run the command
-        tries = 4
-        while tries:
-            tries = tries - 1
-
+        # failure tolerance: max 4 shots for each command to succeed
+        for retry in reversed(range(4)):
             if execute(command):
                 write_history_file(command)
                 print(green("done"))
                 return
-            elif tries:  # if not, and there's still retries to do, we wait before looping again
+            elif retry:  # on failure, if there are still retries to do, we wait before looping again
                 time.sleep(10)
                 print(blue("retrying"))
             else:
@@ -126,21 +123,20 @@ def handle(command):
 
 
 def execute(command):
-    if command.startswith("## lookup "):
-        try:
+    try:
+        if command.startswith("## lookup "):  # then we write the contents of the lookup to the specified path
             split = command.rsplit()
-            return pathlib.Path(split[3]).write_text(zebr0_service.lookup(split[2], strip=False))
-        except Exception as exception:
-            print(red(str(exception)))
-            return False
-    else:
-        # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-        sp = subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
-        sp.wait()
-        return sp.returncode == 0
+            pathlib.Path(split[3]).write_text(zebr0_service.lookup(split[2], strip=False))
+            return True
+        else:
+            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
+            return subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
+    except Exception as exception:
+        print(red(str(exception)))
+        return False
 
 
-argparser = zebr0.ArgumentParser(description="Lightweight idempotent local provisioning.")
+argparser = zebr0.ArgumentParser(description="Minimalist local provisioning.")
 argparser.add_argument("-d", "--directory", default="/var/zebr0/history", help="path to the history files directory (default: /var/zebr0/history)")
 
 argparser.add_argument("command", choices=["history", "run"])

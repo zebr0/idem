@@ -8,4 +8,4 @@ Standards-Version: 3.9.7
 Package: zebr0-script
 Architecture: all
 Depends: ${misc:Depends}, python3, zebr0-core
-Description: Lightweight idempotent local provisioning
+Description: Minimalist local provisioning
