@@ -2,7 +2,6 @@
 
 import datetime
 import hashlib
-import logging
 import os.path
 import pathlib
 import subprocess
@@ -59,11 +58,6 @@ def history():
 
 # main function: downloads then runs or tests a given script
 def run():
-    # ensures that the program is run as root
-    if os.geteuid() != 0:
-        logging.getLogger("zebr0-script").error("root privileges required to run commands")
-        exit(1)
-
     # ensures that history path exists
     if not os.path.isdir(args.directory):
         os.makedirs(args.directory)
