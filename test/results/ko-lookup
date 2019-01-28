@@ -1,4 +1,4 @@
-[94mexecuting[0m ## lookup wrong-lookup tmp/dummy
+[94mexecuting[0m {'lookup': 'wrong-lookup', 'path': 'tmp/dummy'}
 [91mkey 'wrong-lookup' not found anywhere for project 'dummy_project', stage 'dummy_stage' in 'http://localhost:8000'[0m
 [94mretrying[0m
 [91mkey 'wrong-lookup' not found anywhere for project 'dummy_project', stage 'dummy_stage' in 'http://localhost:8000'[0m

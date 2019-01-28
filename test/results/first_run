@@ -10,5 +10,10 @@
 [94mexecuting[0m echo "2"
 2
 [92mdone[0m
-[94mexecuting[0m ## lookup lookup tmp/lookup
+[94mexecuting[0m echo "3"
+3
 [92mdone[0m
+[94mexecuting[0m {'lookup': 'lookup', 'path': 'tmp/lookup'}
+[92mdone[0m
+[93munknown command, ignored:[0m {'script': 'old syntax'}
+[93munknown command, ignored:[0m ['true']

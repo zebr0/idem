@@ -8,6 +8,7 @@ import subprocess
 import sys
 import time
 
+import yaml
 import zebr0
 
 
@@ -15,15 +16,19 @@ import zebr0
 def strformat(timestamp): return datetime.datetime.fromtimestamp(timestamp).strftime("%c")
 
 
-# turns given text in blue
+# colors given text in blue
 def blue(string): return "\033[94m" + string + "\033[0m"
 
 
-# turns given text in green
+# colors given text in yellow
+def yellow(string): return "\033[93m" + string + "\033[0m"
+
+
+# colors given text in green
 def green(string): return "\033[92m" + string + "\033[0m"
 
 
-# turns given text in red
+# colors given text in red
 def red(string): return "\033[91m" + string + "\033[0m"
 
 
@@ -35,19 +40,6 @@ def get_full_path(file): return os.path.join(args.directory, file)
 def get_mtime(file): return os.path.getmtime(get_full_path(file))
 
 
-# returns the md5 hash of a command
-def md5(command): return hashlib.md5(command.encode("utf-8")).hexdigest()
-
-
-# returns if the command has already been run before (i.e. has a history file)
-def todo(command): return not os.path.isfile(get_full_path(md5(command)))
-
-
-# creates a history file to log the command's execution
-def write_history_file(command):
-    pathlib.Path(get_full_path(md5(command))).write_text(command)
-
-
 # main function: prints a history of all executed commands
 def history():
     if os.path.isdir(args.directory):
@@ -56,78 +48,100 @@ def history():
                 print(blue(filename), green(strformat(get_mtime(filename))), file.read().strip())
 
 
-# main function: downloads then runs or tests a given script
+# main function: downloads then processes a given script
 def run():
     # ensures that history path exists
     if not os.path.isdir(args.directory):
         os.makedirs(args.directory)
 
-    recursive(args.script)
+    [task.handle() for task in recursive_lookup(args.script)]
 
 
-def recursive(script):
-    for command in zebr0_service.lookup(script).splitlines():
-        if command.startswith("## script "):
-            recursive(command.rsplit()[2])
-        elif command and (command.startswith("## lookup ") or not command.startswith("#")):  # filters out empty lines and regular comments
-            handle(command)
-
-
-# executes the command if it hasn't been executed yet
-# in "dry" mode, prints the command's status, whether it will be executed or not
-# in "step" mode, asks confirmation before running each step
-def handle(command):
-    if args.dry:
-        print(blue("  todo") if todo(command) else green("  done"), command)
-    elif not todo(command):
-        print(green("skipping"), command)
-    else:
-        if args.step:
-            print(blue("next:"), command)
-            print(blue("(e)xecute,"), green("(s)kip,"), green("always ski(p),"), red("(a)bort ?"))
-
-            choice = sys.stdin.readline().strip()
-            if choice == "e":
-                print(blue("executing"))
-            elif choice == "s":
-                print(green("skipped"))
-                return
-            elif choice == "p":  # to always skip a command, we write a history file even if the command hasn't been executed
-                write_history_file(command)
-                print(green("skipped"))
-                return
-            else:  # choice "a"
-                print(red("aborting"))
-                exit(0)
+def recursive_lookup(script):
+    for command in yaml.load(zebr0_service.lookup(script), Loader=yaml.BaseLoader):
+        if isinstance(command, str):
+            yield Command(command)
+        elif isinstance(command, dict) and command.get("include"):
+            yield from recursive_lookup(command.get("include"))
+        elif isinstance(command, dict) and command.get("lookup") and command.get("path"):
+            yield Lookup(command)
         else:
-            print(blue("executing"), command)
+            print(yellow("unknown command, ignored:"), command)
 
-        # failure tolerance: max 4 shots for each command to succeed
-        for retry in reversed(range(4)):
-            if execute(command):
-                write_history_file(command)
-                print(green("done"))
-                return
-            elif retry:  # on failure, if there are still retries to do, we wait before looping again
-                time.sleep(10)
-                print(blue("retrying"))
+
+class Task:
+    def __init__(self, command):
+        self.command = command
+        self.md5 = hashlib.md5(str(command).encode("utf-8")).hexdigest()
+
+    # executes the command if it hasn't been executed yet
+    # in "dry" mode, prints the command's status, whether it will be executed or not
+    # in "step" mode, asks confirmation before running each step
+    def handle(self):
+        if args.dry:
+            print(blue("  todo") if self._todo() else green("  done"), self.command)
+        elif not self._todo():
+            print(green("skipping"), self.command)
+        else:
+            if args.step:
+                print(blue("next:"), self.command)
+                print(blue("(e)xecute,"), green("(s)kip,"), yellow("always ski(p),"), red("(a)bort ?"))
+
+                choice = sys.stdin.readline().strip()
+                if choice == "e":
+                    print(blue("executing"))
+                elif choice == "s":
+                    print(green("skipped"))
+                    return
+                elif choice == "p":  # to always skip a command, we write a history file even if the command hasn't been executed
+                    self._write_history_file()
+                    print(green("skipped"))
+                    return
+                else:  # choice "a"
+                    print(red("aborting"))
+                    exit(0)
             else:
-                print(red("error"))
-                exit(1)
+                print(blue("executing"), self.command)
+
+            # failure tolerance: max 4 attempts for each command to succeed
+            for retry in reversed(range(4)):
+                if self.execute():
+                    self._write_history_file()
+                    print(green("done"))
+                    return
+                elif retry:  # on failure, if there are still retries to do, we wait before looping again
+                    time.sleep(10)
+                    print(blue("retrying"))
+                else:
+                    print(red("error"))
+                    exit(1)
+
+    def execute(self):
+        raise NotImplementedError  # abstract function
+
+    # returns whether or not the command has already been executed before (i.e. has a history file)
+    def _todo(self):
+        return not os.path.isfile(get_full_path(self.md5))
+
+    # creates a history file to log the command's execution
+    def _write_history_file(self):
+        pathlib.Path(get_full_path(self.md5)).write_text(str(self.command))
 
 
-def execute(command):
-    try:
-        if command.startswith("## lookup "):  # then we write the contents of the lookup to the specified path
-            split = command.rsplit()
-            pathlib.Path(split[3]).write_text(zebr0_service.lookup(split[2], strip=False))
+class Command(Task):
+    def execute(self):
+        # opens a subshell to execute the command, and prints stdout and stderr lines as they come
+        return subprocess.Popen(self.command, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
+
+
+class Lookup(Task):
+    def execute(self):
+        try:
+            pathlib.Path(self.command.get("path")).write_text(zebr0_service.lookup(self.command.get("lookup"), strip=False))
             return True
-        else:
-            # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-            return subprocess.Popen(command, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
-    except Exception as exception:
-        print(red(str(exception)))
-        return False
+        except Exception as e:
+            print(red(str(e)))
+            return False
 
 
 argparser = zebr0.ArgumentParser(description="Minimalist local provisioning.")

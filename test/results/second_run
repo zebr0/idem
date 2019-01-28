@@ -2,4 +2,7 @@
 [92mskipping[0m echo "1" > tmp/retry
 [92mskipping[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
 [92mskipping[0m echo "2"
-[92mskipping[0m ## lookup lookup tmp/lookup
+[92mskipping[0m echo "3"
+[92mskipping[0m {'lookup': 'lookup', 'path': 'tmp/lookup'}
+[93munknown command, ignored:[0m {'script': 'old syntax'}
+[93munknown command, ignored:[0m ['true']

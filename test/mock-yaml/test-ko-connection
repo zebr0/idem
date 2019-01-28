@@ -1,0 +1,4 @@
+---
+- sleep 3
+- lookup: wrong-lookup
+  path: tmp/dummy
