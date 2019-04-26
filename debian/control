@@ -2,7 +2,7 @@ Source: zebr0-script
 Section: admin
 Priority: optional
 Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
-Build-Depends: debhelper (>=9)
+Build-Depends: debhelper (>=10)
 Standards-Version: 3.9.7
 
 Package: zebr0-script

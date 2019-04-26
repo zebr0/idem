@@ -137,7 +137,9 @@ class Command(Task):
 class Lookup(Task):
     def execute(self):
         try:
-            pathlib.Path(self.command.get("path")).write_text(zebr0_service.lookup(self.command.get("lookup"), strip=False))
+            path = pathlib.Path(self.command.get("path"))
+            path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
+            path.write_text(zebr0_service.lookup(self.command.get("lookup"), strip=False))
             return True
         except Exception as e:
             print(red(str(e)))

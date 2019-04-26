@@ -5,6 +5,6 @@
 # comment
 - include: include
 - lookup: lookup
-  path: tmp/lookup
+  path: tmp/dir/lookup
 - script: old syntax
 - - true

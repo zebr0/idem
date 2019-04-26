@@ -27,10 +27,10 @@ diff tmp/first_run results/first_run
 diff tmp/history/2e319d8e37e1a0293ab8680413aba8b1 results/history/2e319d8e37e1a0293ab8680413aba8b1
 diff tmp/history/33d97341f7e26ce567dce8c078d26f74 results/history/33d97341f7e26ce567dce8c078d26f74
 diff tmp/history/55802db65c9fe6f2e052fb91b56f3249 results/history/55802db65c9fe6f2e052fb91b56f3249
-diff tmp/history/80ce453923ebe1a927fcd3e31541c977 results/history/80ce453923ebe1a927fcd3e31541c977
+diff tmp/history/7e9bf2c7ba05d0323c2cd592d06094c8 results/history/7e9bf2c7ba05d0323c2cd592d06094c8
 diff tmp/history/e2e406ee41e39a849d0f307143ff2e67 results/history/e2e406ee41e39a849d0f307143ff2e67
 diff tmp/history/f4fc192a9bb717d392c21bda92b930ba results/history/f4fc192a9bb717d392c21bda92b930ba
-diff tmp/lookup mock-json/lookup
+diff tmp/dir/lookup mock-json/lookup
 
 # test dry output after run
 ../src/zebr0-script -c tmp -d tmp/history run test-ok --dry > tmp/dry_after

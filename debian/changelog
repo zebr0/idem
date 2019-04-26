@@ -1,3 +1,9 @@
+zebr0-script (0.6.0-0ubuntu1) bionic; urgency=medium
+
+  * on lookup, ensures the parent directories exist
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Fri, 26 Apr 2019 14:34:00 +0100
+
 zebr0-script (0.5.0-0ubuntu1) bionic; urgency=medium
 
   * new syntax: now scripts are written in yaml or json
