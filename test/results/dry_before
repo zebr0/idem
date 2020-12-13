@@ -1,8 +1,8 @@
-[94m  todo[0m echo "1"
-[94m  todo[0m echo "1" > tmp/retry
-[94m  todo[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
-[94m  todo[0m echo "2"
-[94m  todo[0m echo "3"
-[94m  todo[0m {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
-[93munknown command, ignored:[0m {'script': 'old syntax'}
-[93munknown command, ignored:[0m ['true']
+  todo echo "1"
+  todo echo "1" > tmp/retry
+  todo retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
+  todo echo "2"
+  todo echo "3"
+  todo {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
+unknown command, ignored: {'script': 'old syntax'}
+unknown command, ignored: ['true']

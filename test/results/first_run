@@ -1,19 +1,19 @@
-[94mexecuting[0m echo "1"
+executing echo "1"
 1
-[92mdone[0m
-[94mexecuting[0m echo "1" > tmp/retry
-[92mdone[0m
-[94mexecuting[0m retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
-[94mretrying[0m
-[94mretrying[0m
-[92mdone[0m
-[94mexecuting[0m echo "2"
+done
+executing echo "1" > tmp/retry
+done
+executing retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
+retrying
+retrying
+done
+executing echo "2"
 2
-[92mdone[0m
-[94mexecuting[0m echo "3"
+done
+executing echo "3"
 3
-[92mdone[0m
-[94mexecuting[0m {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
-[92mdone[0m
-[93munknown command, ignored:[0m {'script': 'old syntax'}
-[93munknown command, ignored:[0m ['true']
+done
+executing {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
+done
+unknown command, ignored: {'script': 'old syntax'}
+unknown command, ignored: ['true']

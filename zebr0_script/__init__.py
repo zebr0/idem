@@ -13,22 +13,6 @@ import yaml
 def strformat(timestamp): return datetime.datetime.fromtimestamp(timestamp).strftime("%c")
 
 
-# colors given text in blue
-def blue(string): return "\033[94m" + string + "\033[0m"
-
-
-# colors given text in yellow
-def yellow(string): return "\033[93m" + string + "\033[0m"
-
-
-# colors given text in green
-def green(string): return "\033[92m" + string + "\033[0m"
-
-
-# colors given text in red
-def red(string): return "\033[91m" + string + "\033[0m"
-
-
 # returns the full path of a history file
 def get_full_path(file, directory): return os.path.join(directory, file)
 
@@ -45,7 +29,7 @@ def history(directory):
     if os.path.isdir(directory):
         for filename in sorted(os.listdir(directory), key=_get_mtime):
             with open(get_full_path(filename, directory)) as file:
-                print(blue(filename), green(strformat(get_mtime(filename, directory))), file.read().strip())
+                print(filename, strformat(get_mtime(filename, directory)), file.read().strip())
 
 
 # main function: downloads then processes a given script
@@ -66,7 +50,7 @@ def recursive_lookup(script, directory, dry, step, client):
         elif isinstance(command, dict) and command.get("lookup") and command.get("path"):
             yield Lookup(command, directory, dry, step, client)
         else:
-            print(yellow("unknown command, ignored:"), command)
+            print("unknown command, ignored:", command)
 
 
 class Task:
@@ -83,41 +67,41 @@ class Task:
     # in "step" mode, asks confirmation before running each step
     def handle(self):
         if self.dry:
-            print(blue("  todo") if self._todo() else green("  done"), self.command)
+            print("  todo" if self._todo() else "  done", self.command)
         elif not self._todo():
-            print(green("skipping"), self.command)
+            print("skipping", self.command)
         else:
             if self.step:
-                print(blue("next:"), self.command)
-                print(blue("(e)xecute,"), green("(s)kip,"), yellow("always ski(p),"), red("(a)bort ?"))
+                print("next:", self.command)
+                print("(e)xecute,", "(s)kip,", "always ski(p),", "(a)bort ?")
 
                 choice = sys.stdin.readline().strip()
                 if choice == "e":
-                    print(blue("executing"))
+                    print("executing")
                 elif choice == "s":
-                    print(green("skipped"))
+                    print("skipped")
                     return
                 elif choice == "p":  # to always skip a command, we write a history file even if the command hasn't been executed
                     self._write_history_file()
-                    print(green("skipped"))
+                    print("skipped")
                     return
                 else:  # choice "a"
-                    print(red("aborting"))
+                    print("aborting")
                     exit(0)
             else:
-                print(blue("executing"), self.command)
+                print("executing", self.command)
 
             # failure tolerance: max 4 attempts for each command to succeed
             for retry in reversed(range(4)):
                 if self.execute():
                     self._write_history_file()
-                    print(green("done"))
+                    print("done")
                     return
                 elif retry:  # on failure, if there are still retries to do, we wait before looping again
                     time.sleep(10)
-                    print(blue("retrying"))
+                    print("retrying")
                 else:
-                    print(red("error"))
+                    print("error")
                     exit(1)
 
     def execute(self):
@@ -146,5 +130,5 @@ class Lookup(Task):
             path.write_text(self.client.get(self.command.get("lookup"), strip=False))
             return True
         except Exception as e:
-            print(red(str(e)))
+            print(str(e))
             return False
