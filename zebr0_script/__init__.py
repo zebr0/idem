@@ -9,27 +9,17 @@ import time
 import yaml
 
 
-# formats given time in a human-readable way
-def strformat(timestamp): return datetime.datetime.fromtimestamp(timestamp).strftime("%c")
-
-
-# returns the full path of a history file
-def get_full_path(file, directory): return os.path.join(directory, file)
-
-
-# returns the mtime of a history file
-def get_mtime(file, directory): return os.path.getmtime(get_full_path(file, directory))
-
-
 # main function: prints a history of all executed commands
 def history(directory):
     def _get_mtime(_file):
-        return get_mtime(_file, directory)
+        return os.path.getmtime(os.path.join(directory, _file))
 
     if os.path.isdir(directory):
         for filename in sorted(os.listdir(directory), key=_get_mtime):
-            with open(get_full_path(filename, directory)) as file:
-                print(filename, strformat(get_mtime(filename, directory)), file.read().strip())
+            with open(os.path.join(directory, filename)) as file:
+                timestamp = _get_mtime(filename)
+                strformat = datetime.datetime.fromtimestamp(timestamp).strftime("%c")
+                print(filename, strformat, file.read().strip())
 
 
 # main function: downloads then processes a given script
@@ -109,11 +99,11 @@ class Task:
 
     # returns whether or not the command has already been executed before (i.e. has a history file)
     def _todo(self):
-        return not os.path.isfile(get_full_path(self.md5, self.directory))
+        return not os.path.isfile(os.path.join(self.directory, self.md5))
 
     # creates a history file to log the command's execution
     def _write_history_file(self):
-        pathlib.Path(get_full_path(self.md5, self.directory)).write_text(str(self.command))
+        pathlib.Path(os.path.join(self.directory, self.md5)).write_text(str(self.command))
 
 
 class Command(Task):
