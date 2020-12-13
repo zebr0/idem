@@ -8,9 +8,11 @@ import time
 
 import yaml
 
+import zebr0
+
 
 # main function: prints a history of all executed commands
-def history(directory):
+def history(url, levels, cache, configuration_file, directory, command):
     def _get_mtime(_file):
         return os.path.getmtime(os.path.join(directory, _file))
 
@@ -23,11 +25,12 @@ def history(directory):
 
 
 # main function: downloads then processes a given script
-def run(script, directory, dry, step, client):
+def run(url, levels, cache, configuration_file, directory, command, script, dry, step):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
+    client = zebr0.Client(url, levels, cache, configuration_file)
     [task.handle() for task in recursive_lookup(script, directory, dry, step, client)]
 
 

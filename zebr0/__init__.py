@@ -5,7 +5,7 @@ import http.server
 import json
 import pathlib
 import threading
-from typing import List, Optional
+from typing import List, Optional, Any
 
 import jinja2
 import requests_cache
@@ -195,15 +195,23 @@ class TestServer:
         self.stop()
 
 
-class ArgumentParser(argparse.ArgumentParser):
+def build_argument_parser(*args: Any, **kwargs: Any) -> argparse.ArgumentParser:
     """
-    ArgumentParser that zebr0 executables can use to share a common Client CLI syntax.
+    Builds an ArgumentParser that zebr0 executables can use to share a common Client CLI syntax.
+
+    For some reason, subclassing argparse.ArgumentParser and adding the arguments in the constructor doesn't work well with subparsers.
+    A builder function does.
+
+    :param args: arguments of the ArgumentParser constructor
+    :param kwargs: keyword arguments of the ArgumentParser constructor
+    :return: the customized ArgumentParser
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    argparser = argparse.ArgumentParser(*args, **kwargs)
 
-        self.add_argument("-u", "--url", help="URL of the key-value server, defaults to https://hub.zebr0.io", metavar="<url>")
-        self.add_argument("-l", "--levels", nargs="*", help='levels of specialization (e.g. "mattermost production" for a <project>/<environment>/<key> structure), defaults to ""', metavar="<level>")
-        self.add_argument("-c", "--cache", type=int, help="in seconds, the duration of the cache of http responses, defaults to 300 seconds", metavar="<duration>")
-        self.add_argument("-f", "--configuration-file", default=CONFIGURATION_FILE_DEFAULT, help="path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration", metavar="<path>")
+    argparser.add_argument("-u", "--url", help="URL of the key-value server, defaults to https://hub.zebr0.io", metavar="<url>")
+    argparser.add_argument("-l", "--levels", nargs="*", help='levels of specialization (e.g. "mattermost production" for a <project>/<environment>/<key> structure), defaults to ""', metavar="<level>")
+    argparser.add_argument("-c", "--cache", type=int, help="in seconds, the duration of the cache of http responses, defaults to 300 seconds", metavar="<duration>")
+    argparser.add_argument("-f", "--configuration-file", default=CONFIGURATION_FILE_DEFAULT, help="path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration", metavar="<path>")
+
+    return argparser

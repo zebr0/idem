@@ -23,7 +23,7 @@ import sys
 
 import zebr0
 
-argparser = zebr0.ArgumentParser(description="Saves zebr0's configuration in a JSON file.")
+argparser = zebr0.build_argument_parser(description="Saves zebr0's configuration in a JSON file.")
 argparser.add_argument("-t", "--test", help="tests the configuration by fetching a key (e.g. 'fqdn')", metavar="<key>")
 args = argparser.parse_args()
 
