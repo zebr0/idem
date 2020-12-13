@@ -58,7 +58,7 @@ def run(script, directory, dry, step, client):
 
 
 def recursive_lookup(script, directory, dry, step, client):
-    for command in yaml.load(client.lookup(script), Loader=yaml.BaseLoader):
+    for command in yaml.load(client.get(script), Loader=yaml.BaseLoader):
         if isinstance(command, str):
             yield Command(command, directory, dry, step, client)
         elif isinstance(command, dict) and command.get("include"):
@@ -143,7 +143,7 @@ class Lookup(Task):
         try:
             path = pathlib.Path(self.command.get("path"))
             path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
-            path.write_text(self.client.lookup(self.command.get("lookup"), strip=False))
+            path.write_text(self.client.get(self.command.get("lookup"), strip=False))
             return True
         except Exception as e:
             print(red(str(e)))
