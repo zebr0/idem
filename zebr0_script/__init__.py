@@ -1,10 +1,10 @@
 import datetime
 import hashlib
 import os.path
-import pathlib
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 import yaml
 
@@ -12,7 +12,7 @@ import zebr0
 
 
 # main function: prints a history of all executed commands
-def history(url, levels, cache, configuration_file, directory, command):
+def history(directory, **_):
     def _get_mtime(_file):
         return os.path.getmtime(os.path.join(directory, _file))
 
@@ -25,89 +25,63 @@ def history(url, levels, cache, configuration_file, directory, command):
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, command, script):
+def run(url, levels, cache, configuration_file, directory, script, **_):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    [task.handle() for task in recursive_lookup(script, directory, False, client)]
+    for task, history_file in recursive_lookup2(script, directory, client):
+        if history_file.is_file():
+            print("skipping", task)
+        else:
+            print("executing", task)
+
+            if isinstance(task, str):
+                execute(task, history_file)
+            else:
+                lookup(task, history_file, client)
 
 
-def show(url, levels, cache, configuration_file, directory, command, script):
+def show(url, levels, cache, configuration_file, directory: Path, script, **_):
     client = zebr0.Client(url, levels, cache, configuration_file)
-    [task.handle() for task in recursive_lookup(script, directory, True, client)]
+    for task, history_file in recursive_lookup2(script, directory, client):
+        print("  todo" if not history_file.is_file() else "  done", task)
 
 
-def recursive_lookup(script, directory, dry, client):
-    for command in yaml.load(client.get(script), Loader=yaml.BaseLoader):
-        if isinstance(command, str):
-            yield Command(command, directory, dry, client)
-        elif isinstance(command, dict) and command.get("include"):
-            yield from recursive_lookup(command.get("include"), directory, dry, client)
-        elif isinstance(command, dict) and command.get("lookup") and command.get("path"):
-            yield Lookup(command, directory, dry, client)
+def recursive_lookup2(script, directory, client):
+    for task in yaml.load(client.get(script), Loader=yaml.BaseLoader):
+        if isinstance(task, dict) and task.get("include"):
+            yield from recursive_lookup2(task.get("include"), directory, client)
+        elif isinstance(task, str) or isinstance(task, dict) and task.get("lookup") and task.get("path"):
+            md5 = hashlib.md5(str(task).encode("utf-8")).hexdigest()
+            yield task, directory.joinpath(md5)
         else:
-            print("unknown command, ignored:", command)
+            print("unknown command, ignored:", task)
 
 
-class Task:
-    def __init__(self, command, directory, dry, client):
-        self.command = command
-        self.directory = directory
-        self.dry = dry
-        self.client = client
-        self.md5 = hashlib.md5(str(command).encode("utf-8")).hexdigest()
+def lookup(task, history_file, client):
+    path = Path(task.get("path"))
+    path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
+    path.write_text(client.get(task.get("lookup"), strip=False))
+    history_file.write_text(str(task))
+    print("done")
 
-    # executes the command if it hasn't been executed yet
-    # in "dry" mode, prints the command's status, whether it will be executed or not
-    def handle(self):
-        if self.dry:
-            print("  todo" if self._todo() else "  done", self.command)
-        elif not self._todo():
-            print("skipping", self.command)
+
+def execute_command(task):
+    return subprocess.Popen(task, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
+
+
+def execute(task, history_file):
+    # failure tolerance: max 4 attempts for each command to succeed
+    for retry in reversed(range(4)):
+        if execute_command(task):
+            history_file.write_text(task)
+            print("done")
+            break
+        elif retry:  # on failure, if there are still retries to do, we wait before looping again
+            time.sleep(10)
+            print("retrying")
         else:
-            print("executing", self.command)
-
-            # failure tolerance: max 4 attempts for each command to succeed
-            for retry in reversed(range(4)):
-                if self.execute():
-                    self._write_history_file()
-                    print("done")
-                    return
-                elif retry:  # on failure, if there are still retries to do, we wait before looping again
-                    time.sleep(10)
-                    print("retrying")
-                else:
-                    print("error")
-                    exit(1)
-
-    def execute(self):
-        raise NotImplementedError  # abstract function
-
-    # returns whether or not the command has already been executed before (i.e. has a history file)
-    def _todo(self):
-        # TODO: check directory
-        return not os.path.isfile(os.path.join(self.directory, self.md5))
-
-    # creates a history file to log the command's execution
-    def _write_history_file(self):
-        pathlib.Path(os.path.join(self.directory, self.md5)).write_text(str(self.command))
-
-
-class Command(Task):
-    def execute(self):
-        # opens a subshell to execute the command, and prints stdout and stderr lines as they come
-        return subprocess.Popen(self.command, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
-
-
-class Lookup(Task):
-    def execute(self):
-        try:
-            path = pathlib.Path(self.command.get("path"))
-            path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
-            path.write_text(self.client.get(self.command.get("lookup"), strip=False))
-            return True
-        except Exception as e:
-            print(str(e))
-            return False
+            print("error")
+            break

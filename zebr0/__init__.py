@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 import http.server
 import json
-import pathlib
 import threading
+from pathlib import Path
 from typing import List, Optional, Any
 
 import jinja2
@@ -19,7 +19,7 @@ CACHE = "cache"
 URL_DEFAULT = "https://hub.zebr0.io"
 LEVELS_DEFAULT = []
 CACHE_DEFAULT = 300
-CONFIGURATION_FILE_DEFAULT = "/etc/zebr0.conf"
+CONFIGURATION_FILE_DEFAULT = Path("/etc/zebr0.conf")
 
 
 class Client:
@@ -53,7 +53,7 @@ class Client:
     :param configuration_file: path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
     """
 
-    def __init__(self, url: str = "", levels: Optional[List[str]] = None, cache: int = 0, configuration_file: str = CONFIGURATION_FILE_DEFAULT) -> None:
+    def __init__(self, url: str = "", levels: Optional[List[str]] = None, cache: int = 0, configuration_file: Path = CONFIGURATION_FILE_DEFAULT) -> None:
         # first set default values
         self.url = URL_DEFAULT
         self.levels = LEVELS_DEFAULT
@@ -61,7 +61,7 @@ class Client:
 
         # then override with the configuration file if present
         try:
-            configuration_string = pathlib.Path(configuration_file).read_text(ENCODING)
+            configuration_string = configuration_file.read_text(ENCODING)
             configuration = json.loads(configuration_string)
 
             self.url = configuration.get(URL, URL_DEFAULT)
@@ -119,7 +119,7 @@ class Client:
 
         return value
 
-    def save_configuration(self, configuration_file: str = CONFIGURATION_FILE_DEFAULT) -> None:
+    def save_configuration(self, configuration_file: Path = CONFIGURATION_FILE_DEFAULT) -> None:
         """
         Saves the Client's configuration to a JSON file.
 
@@ -128,7 +128,7 @@ class Client:
 
         configuration = {URL: self.url, LEVELS: self.levels, CACHE: self.cache}
         configuration_string = json.dumps(configuration)
-        pathlib.Path(configuration_file).write_text(configuration_string, ENCODING)
+        configuration_file.write_text(configuration_string, ENCODING)
 
 
 class TestServer:
@@ -212,6 +212,6 @@ def build_argument_parser(*args: Any, **kwargs: Any) -> argparse.ArgumentParser:
     argparser.add_argument("-u", "--url", help="URL of the key-value server, defaults to https://hub.zebr0.io", metavar="<url>")
     argparser.add_argument("-l", "--levels", nargs="*", help='levels of specialization (e.g. "mattermost production" for a <project>/<environment>/<key> structure), defaults to ""', metavar="<level>")
     argparser.add_argument("-c", "--cache", type=int, help="in seconds, the duration of the cache of http responses, defaults to 300 seconds", metavar="<duration>")
-    argparser.add_argument("-f", "--configuration-file", default=CONFIGURATION_FILE_DEFAULT, help="path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration", metavar="<path>")
+    argparser.add_argument("-f", "--configuration-file", type=Path, default=CONFIGURATION_FILE_DEFAULT, help="path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration", metavar="<path>")
 
     return argparser

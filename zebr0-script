@@ -1,11 +1,12 @@
 #!/usr/bin/python3 -u
 
-import zebr0
+from pathlib import Path
 
+import zebr0
 import zebr0_script
 
 argparser = zebr0.build_argument_parser(description="Minimalist local provisioning.")
-argparser.add_argument("-d", "--directory", default="/var/zebr0/history", help="path to the history files directory (default: /var/zebr0/history)")
+argparser.add_argument("-d", "--directory", type=Path, default=Path("/var/zebr0/history"), help="path to the history files directory (default: /var/zebr0/history)")
 subparsers = argparser.add_subparsers()
 
 history_parser = subparsers.add_parser("history")
