@@ -25,69 +25,49 @@ def history(url, levels, cache, configuration_file, directory, command):
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, command, script, step):
+def run(url, levels, cache, configuration_file, directory, command, script):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    [task.handle() for task in recursive_lookup(script, directory, False, step, client)]
+    [task.handle() for task in recursive_lookup(script, directory, False, client)]
 
 
 def show(url, levels, cache, configuration_file, directory, command, script):
     client = zebr0.Client(url, levels, cache, configuration_file)
-    [task.handle() for task in recursive_lookup(script, directory, True, False, client)]
+    [task.handle() for task in recursive_lookup(script, directory, True, client)]
 
 
-def recursive_lookup(script, directory, dry, step, client):
+def recursive_lookup(script, directory, dry, client):
     for command in yaml.load(client.get(script), Loader=yaml.BaseLoader):
         if isinstance(command, str):
-            yield Command(command, directory, dry, step, client)
+            yield Command(command, directory, dry, client)
         elif isinstance(command, dict) and command.get("include"):
-            yield from recursive_lookup(command.get("include"), directory, dry, step, client)
+            yield from recursive_lookup(command.get("include"), directory, dry, client)
         elif isinstance(command, dict) and command.get("lookup") and command.get("path"):
-            yield Lookup(command, directory, dry, step, client)
+            yield Lookup(command, directory, dry, client)
         else:
             print("unknown command, ignored:", command)
 
 
 class Task:
-    def __init__(self, command, directory, dry, step, client):
+    def __init__(self, command, directory, dry, client):
         self.command = command
         self.directory = directory
         self.dry = dry
-        self.step = step
         self.client = client
         self.md5 = hashlib.md5(str(command).encode("utf-8")).hexdigest()
 
     # executes the command if it hasn't been executed yet
     # in "dry" mode, prints the command's status, whether it will be executed or not
-    # in "step" mode, asks confirmation before running each step
     def handle(self):
         if self.dry:
             print("  todo" if self._todo() else "  done", self.command)
         elif not self._todo():
             print("skipping", self.command)
         else:
-            if self.step:
-                print("next:", self.command)
-                print("(e)xecute,", "(s)kip,", "always ski(p),", "(a)bort ?")
-
-                choice = sys.stdin.readline().strip()
-                if choice == "e":
-                    print("executing")
-                elif choice == "s":
-                    print("skipped")
-                    return
-                elif choice == "p":  # to always skip a command, we write a history file even if the command hasn't been executed
-                    self._write_history_file()
-                    print("skipped")
-                    return
-                else:  # choice "a"
-                    print("aborting")
-                    exit(0)
-            else:
-                print("executing", self.command)
+            print("executing", self.command)
 
             # failure tolerance: max 4 attempts for each command to succeed
             for retry in reversed(range(4)):

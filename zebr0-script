@@ -13,7 +13,6 @@ history_parser.set_defaults(command=zebr0_script.history)
 
 run_parser = subparsers.add_parser("run")
 run_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
-run_parser.add_argument("--step", action="store_true", help="asks confirmation before running each step")
 run_parser.set_defaults(command=zebr0_script.run)
 
 show_parser = subparsers.add_parser("show")
