@@ -18,7 +18,7 @@ cd ..
 ../zebr0-setup -f tmp/zebr0.conf -u http://localhost:8000 -l dummy_project dummy_stage
 
 # test dry output before run
-../zebr0-script -f tmp/zebr0.conf -d tmp/history run test-ok --dry > tmp/dry_before
+../zebr0-script -f tmp/zebr0.conf -d tmp/history show test-ok > tmp/dry_before
 diff tmp/dry_before results/dry_before
 
 # test first run
@@ -33,7 +33,7 @@ diff tmp/history/f4fc192a9bb717d392c21bda92b930ba results/history/f4fc192a9bb717
 diff tmp/dir/lookup mock-yaml/lookup
 
 # test dry output after run
-../zebr0-script -f tmp/zebr0.conf -d tmp/history run test-ok --dry > tmp/dry_after
+../zebr0-script -f tmp/zebr0.conf -d tmp/history show test-ok > tmp/dry_after
 diff tmp/dry_after results/dry_after
 
 # test second run

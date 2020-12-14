@@ -25,13 +25,18 @@ def history(url, levels, cache, configuration_file, directory, command):
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, command, script, dry, step):
+def run(url, levels, cache, configuration_file, directory, command, script, step):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    [task.handle() for task in recursive_lookup(script, directory, dry, step, client)]
+    [task.handle() for task in recursive_lookup(script, directory, False, step, client)]
+
+
+def show(url, levels, cache, configuration_file, directory, command, script):
+    client = zebr0.Client(url, levels, cache, configuration_file)
+    [task.handle() for task in recursive_lookup(script, directory, True, False, client)]
 
 
 def recursive_lookup(script, directory, dry, step, client):
@@ -102,6 +107,7 @@ class Task:
 
     # returns whether or not the command has already been executed before (i.e. has a history file)
     def _todo(self):
+        # TODO: check directory
         return not os.path.isfile(os.path.join(self.directory, self.md5))
 
     # creates a history file to log the command's execution
