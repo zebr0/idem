@@ -34,3 +34,17 @@ def test_execute_ko(monkeypatch, capsys):
     with tempfile.TemporaryDirectory() as tmp:
         zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 5, 0.1)
         assert capsys.readouterr().out == "ko\nretrying\nko\nretrying\nko\nretrying\nko\nretrying\nko\nerror\n"
+
+
+def test_execute_ko_then_ok(monkeypatch, capsys):
+    trick = {}
+
+    def fake_execute_command(task):
+        trick["count"] = trick.get("count", 0) + 1
+        return trick.get("count") == 3
+
+    monkeypatch.setattr(zebr0_script, "execute_command", fake_execute_command)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 3, 0.1)
+        assert capsys.readouterr().out == "retrying\nretrying\ndone\n"
