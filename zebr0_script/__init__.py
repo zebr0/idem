@@ -10,6 +10,9 @@ import yaml
 
 import zebr0
 
+ATTEMPTS_DEFAULT = 4
+DELAY_DEFAULT = 10
+
 
 # main function: prints a history of all executed commands
 def history(directory, **_):
@@ -25,7 +28,7 @@ def history(directory, **_):
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, script, **_):
+def run(url, levels, cache, configuration_file, directory, script, attempts, delay, **_):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
@@ -38,7 +41,7 @@ def run(url, levels, cache, configuration_file, directory, script, **_):
             print("executing", task)
 
             if isinstance(task, str):
-                execute(task, history_file)
+                execute(task, history_file, attempts, delay)
             else:
                 lookup(task, history_file, client)
 
@@ -72,15 +75,15 @@ def execute_command(task):
     return subprocess.Popen(task, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
 
 
-def execute(task, history_file):
+def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
     # failure tolerance: max 4 attempts for each command to succeed
-    for retry in reversed(range(4)):
+    for retry in reversed(range(attempts)):
         if execute_command(task):
             history_file.write_text(task)
             print("done")
             break
         elif retry:  # on failure, if there are still retries to do, we wait before looping again
-            time.sleep(10)
+            time.sleep(delay)
             print("retrying")
         else:
             print("error")

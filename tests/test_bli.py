@@ -32,5 +32,5 @@ def test_execute_ko(monkeypatch, capsys):
     monkeypatch.setattr(zebr0_script, "execute_command", fake_execute_command)
 
     with tempfile.TemporaryDirectory() as tmp:
-        zebr0_script.execute("dummy", Path(tmp).joinpath("test"))
-        assert capsys.readouterr().out == "ko\nretrying\nko\nretrying\nko\nretrying\nko\nerror\n"
+        zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 5, 0.1)
+        assert capsys.readouterr().out == "ko\nretrying\nko\nretrying\nko\nretrying\nko\nretrying\nko\nerror\n"
