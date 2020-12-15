@@ -1,7 +1,16 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+
+import zebr0
 import zebr0_script
+
+
+@pytest.fixture(scope="module")
+def server():
+    with zebr0.TestServer() as server:
+        yield server
 
 
 def test_execute_command():
@@ -48,3 +57,22 @@ def test_execute_ko_then_ok(monkeypatch, capsys):
     with tempfile.TemporaryDirectory() as tmp:
         zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 3, 0.1)
         assert capsys.readouterr().out == "retrying\nretrying\ndone\n"
+
+
+def test_lookup(server, capsys):
+    server.data = {"data": "dummy\n"}
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+
+        client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+        testfile = tmp.joinpath("many/directories/test")
+        historyfile = tmp.joinpath("history")
+        sdfsdf = {"lookup": "data", "path": testfile}
+
+        zebr0_script.lookup(sdfsdf, historyfile, client)
+
+        assert testfile.read_text() == "dummy\n"
+        assert historyfile.read_text() == str(sdfsdf)
+        assert capsys.readouterr().out == "done\n"
