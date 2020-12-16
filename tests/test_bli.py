@@ -22,7 +22,7 @@ def test_execute_command():
 
 
 def test_execute(monkeypatch, capsys):
-    def fake_execute_command(task):
+    def fake_execute_command(_):
         print("ok")
         return True
 
@@ -34,7 +34,7 @@ def test_execute(monkeypatch, capsys):
 
 
 def test_execute_ko(monkeypatch, capsys):
-    def fake_execute_command(task):
+    def fake_execute_command(_):
         print("ko")
         return False
 
@@ -48,7 +48,7 @@ def test_execute_ko(monkeypatch, capsys):
 def test_execute_ko_then_ok(monkeypatch, capsys):
     trick = {}
 
-    def fake_execute_command(task):
+    def fake_execute_command(_):
         trick["count"] = trick.get("count", 0) + 1
         return trick.get("count") == 3
 
