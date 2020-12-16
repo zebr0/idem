@@ -121,3 +121,37 @@ def test_show(monkeypatch, capsys):
 
         zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp, "script")
         assert capsys.readouterr().out == "  done test1\n  done test2\n"
+
+
+def test_run(monkeypatch, capsys):
+    with tempfile.TemporaryDirectory() as tmp:
+        historypath = Path(tmp).joinpath("history")
+        historyfile1 = historypath.joinpath("historyfile1")
+        historyfile2 = historypath.joinpath("historyfile2")
+
+        def fake_recursive_lookup2(*_):
+            yield "test", historyfile1
+            yield {"yin": "yang"}, historyfile2
+
+        def fake_execute(task, *_):
+            print("task:", task)
+
+        def fake_lookup(task, *_):
+            print("lookup:", str(task))
+
+        monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
+        monkeypatch.setattr(zebr0_script, "execute", fake_execute)
+        monkeypatch.setattr(zebr0_script, "lookup", fake_lookup)
+
+        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
+        assert capsys.readouterr().out == "executing test\ntask: test\nexecuting {'yin': 'yang'}\nlookup: {'yin': 'yang'}\n"
+
+        historyfile1.touch()
+
+        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
+        assert capsys.readouterr().out == "skipping test\nexecuting {'yin': 'yang'}\nlookup: {'yin': 'yang'}\n"
+
+        historyfile2.touch()
+
+        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
+        assert capsys.readouterr().out == "skipping test\nskipping {'yin': 'yang'}\n"
