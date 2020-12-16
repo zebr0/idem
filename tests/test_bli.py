@@ -1,4 +1,5 @@
 import datetime
+import subprocess
 import tempfile
 import time
 from pathlib import Path
@@ -176,3 +177,36 @@ def test_history(capsys):
 
         zebr0_script.history(historypath)
         assert capsys.readouterr().out == "historyfile1 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " hello\nhistoryfile2 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " no way\n"
+
+
+def run(command):
+    sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding=zebr0.ENCODING)
+    (stdout, stderr) = sp.communicate()
+
+    assert sp.returncode == 0
+    assert stderr == ""
+
+    return stdout
+
+
+def test_cli(server):
+    server.data = {"script": ["echo one", "echo two"]}
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        history = Path(tmp).joinpath("history")
+        configuration_file = tmp.joinpath("zebr0.conf")
+        configuration_file.write_text('{"url": "http://127.0.0.1:8000", "levels": ["lorem", "ipsum"], "cache": 1}')
+
+        assert run("./zebr0-script -d {} history".format(history)) == ""
+        assert run("./zebr0-script -f {} -d {} show".format(configuration_file, history)) == "  todo echo one\n  todo echo two\n"
+        assert run("./zebr0-script -f {} -d {} run".format(configuration_file, history)) == "executing echo one\none\ndone\nexecuting echo two\ntwo\ndone\n"
+
+        historyfile1 = Path(tmp).joinpath("history").joinpath("24679074dc99cd3d91a6ae4b54e38941")
+        hf1mtime = historyfile1.stat().st_mtime
+        historyfile2 = Path(tmp).joinpath("history").joinpath("9871953929eceff66bcc5ed46fe462e7")
+        hf2mtime = historyfile2.stat().st_mtime
+
+        assert run("./zebr0-script -d {} history".format(history)) == "24679074dc99cd3d91a6ae4b54e38941 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one\n" + "9871953929eceff66bcc5ed46fe462e7 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
+        assert run("./zebr0-script -f {} -d {} show".format(configuration_file, history)) == "  done echo one\n  done echo two\n"
+        assert run("./zebr0-script -f {} -d {} run".format(configuration_file, history)) == "skipping echo one\nskipping echo two\n"
