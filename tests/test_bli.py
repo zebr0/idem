@@ -1,4 +1,6 @@
+import datetime
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -155,3 +157,22 @@ def test_run(monkeypatch, capsys):
 
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
         assert capsys.readouterr().out == "skipping test\nskipping {'yin': 'yang'}\n"
+
+
+def test_history(capsys):
+    with tempfile.TemporaryDirectory() as tmp:
+        historypath = Path(tmp).joinpath("history")
+        zebr0_script.history(historypath)
+        assert capsys.readouterr().out == ""
+
+        historypath.mkdir()
+        historyfile1 = historypath.joinpath("historyfile1")
+        historyfile1.write_text("hello")
+        hf1mtime = historyfile1.stat().st_mtime
+        time.sleep(0.1)
+        historyfile2 = historypath.joinpath("historyfile2")
+        historyfile2.write_text("no way")
+        hf2mtime = historyfile2.stat().st_mtime
+
+        zebr0_script.history(historypath)
+        assert capsys.readouterr().out == "historyfile1 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " hello\nhistoryfile2 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " no way\n"
