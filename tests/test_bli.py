@@ -95,3 +95,29 @@ def test_recursive_lookup2(server, capsys):
                             ("install package yyy", Path("/tmp/fdeb9fb70de466a3975f25725c897913")),
                             ("yyy configure network", Path("/tmp/c39b670739e8ece59c0f53b6b1b0dfb3"))]
     assert capsys.readouterr().out == "unknown command, ignored: {'make-coffee': 'black'}\n"
+
+
+def test_show(monkeypatch, capsys):
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        historyfile1 = tmp.joinpath("historyfile1")
+        historyfile2 = tmp.joinpath("historyfile2")
+
+        def fake_recursive_lookup2(*_):
+            yield "test1", historyfile1
+            yield "test2", historyfile2
+
+        monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
+
+        zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp, "script")
+        assert capsys.readouterr().out == "  todo test1\n  todo test2\n"
+
+        historyfile1.touch()
+
+        zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp, "script")
+        assert capsys.readouterr().out == "  done test1\n  todo test2\n"
+
+        historyfile2.touch()
+
+        zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp, "script")
+        assert capsys.readouterr().out == "  done test1\n  done test2\n"
