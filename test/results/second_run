@@ -1,8 +1,0 @@
-skipping echo "1"
-skipping echo "1" > tmp/retry
-skipping retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
-skipping echo "2"
-skipping echo "3"
-skipping {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
-unknown command, ignored: {'script': 'old syntax'}
-unknown command, ignored: ['true']

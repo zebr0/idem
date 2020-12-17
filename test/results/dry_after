@@ -1,8 +1,0 @@
-  done echo "1"
-  done echo "1" > tmp/retry
-  done retry=`cat tmp/retry` && echo $(($retry+1)) > tmp/retry && [ $retry -eq 3 ]
-  done echo "2"
-  done echo "3"
-  done {'lookup': 'lookup', 'path': 'tmp/dir/lookup'}
-unknown command, ignored: {'script': 'old syntax'}
-unknown command, ignored: ['true']
