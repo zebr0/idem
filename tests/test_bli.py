@@ -15,12 +15,12 @@ def server():
         yield server
 
 
-def test_execute_command():
+def test_execute_command(capsys):
     with tempfile.TemporaryDirectory() as tmp:
-        assert zebr0_script.execute_command("touch {}/test".format(tmp))
+        assert zebr0_script.execute_command("echo ok && touch {}/test".format(tmp))
         assert Path(tmp).joinpath("test").is_file()
         assert not zebr0_script.execute_command("false")
-        # with popen used like that, it's impossible to test stdout
+        assert capsys.readouterr().out == "ok\n"
 
 
 def test_execute(monkeypatch, capsys):
@@ -193,14 +193,21 @@ def test_cli(server, capsys):
         zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "show"])
         assert capsys.readouterr().out == "  todo echo one\n  todo echo two\n"
 
-        # todo: change the call to popen so that we can test stdout properly, then adapt the rest of the tests:
-        # assert run("./zebr0-script -f {} -d {} run".format(configuration_file, history)) == "executing echo one\none\ndone\nexecuting echo two\ntwo\ndone\n"
-        # historyfile1 = Path(tmp).joinpath("history").joinpath("24679074dc99cd3d91a6ae4b54e38941")
-        # hf1mtime = historyfile1.stat().st_mtime
-        # historyfile2 = Path(tmp).joinpath("history").joinpath("9871953929eceff66bcc5ed46fe462e7")
-        # hf2mtime = historyfile2.stat().st_mtime
-        # assert run("./zebr0-script -d {} history".format(history)) == "24679074dc99cd3d91a6ae4b54e38941 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one\n" + "9871953929eceff66bcc5ed46fe462e7 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
-        # assert run("./zebr0-script -f {} -d {} show".format(configuration_file, history)) == "  done echo one\n  done echo two\n"
-        # assert run("./zebr0-script -f {} -d {} run".format(configuration_file, history)) == "skipping echo one\nskipping echo two\n"
+        zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "run"])
+        assert capsys.readouterr().out == "executing echo one\none\ndone\nexecuting echo two\ntwo\ndone\n"
+
+        historyfile1 = Path(tmp).joinpath("history").joinpath("24679074dc99cd3d91a6ae4b54e38941")
+        hf1mtime = historyfile1.stat().st_mtime
+        historyfile2 = Path(tmp).joinpath("history").joinpath("9871953929eceff66bcc5ed46fe462e7")
+        hf2mtime = historyfile2.stat().st_mtime
+
+        zebr0_script.main(["-d", str(history), "history"])
+        assert capsys.readouterr().out == "24679074dc99cd3d91a6ae4b54e38941 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one\n" + "9871953929eceff66bcc5ed46fe462e7 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
+
+        zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "show"])
+        assert capsys.readouterr().out == "  done echo one\n  done echo two\n"
+
+        zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "run"])
+        assert capsys.readouterr().out == "skipping echo one\nskipping echo two\n"
 
 # TODO: tests connection ko & tests script or lookup ko

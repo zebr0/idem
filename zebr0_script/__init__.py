@@ -2,7 +2,6 @@ import datetime
 import hashlib
 import os.path
 import subprocess
-import sys
 import time
 from pathlib import Path
 
@@ -71,7 +70,10 @@ def lookup(task, history_file, client):
 
 
 def execute_command(task):
-    return subprocess.Popen(task, shell=True, stdout=sys.stdout, stderr=sys.stderr).wait() == 0
+    sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding=zebr0.ENCODING)
+    (stdout, stderr) = sp.communicate()
+    print(stdout, end="")
+    return sp.returncode == 0
 
 
 def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
