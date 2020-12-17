@@ -210,3 +210,5 @@ def test_cli(server):
         assert run("./zebr0-script -d {} history".format(history)) == "24679074dc99cd3d91a6ae4b54e38941 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one\n" + "9871953929eceff66bcc5ed46fe462e7 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
         assert run("./zebr0-script -f {} -d {} show".format(configuration_file, history)) == "  done echo one\n  done echo two\n"
         assert run("./zebr0-script -f {} -d {} run".format(configuration_file, history)) == "skipping echo one\nskipping echo two\n"
+
+# TODO: tests connection ko & tests script or lookup ko
