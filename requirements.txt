@@ -1,0 +1,8 @@
+zebr0
+PyYAML
+
+pytest
+
+setuptools
+wheel
+twine
