@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 
 import yaml
-
 import zebr0
 
 ATTEMPTS_DEFAULT = 4
@@ -88,3 +87,25 @@ def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
         else:
             print("error")
             break
+
+
+def main(argv=None):
+    argparser = zebr0.build_argument_parser(description="Minimalist local provisioning.")
+    argparser.add_argument("-d", "--directory", type=Path, default=Path("/var/zebr0/history"), help="path to the history files directory (default: /var/zebr0/history)")
+    subparsers = argparser.add_subparsers()
+
+    history_parser = subparsers.add_parser("history")
+    history_parser.set_defaults(command=history)
+
+    run_parser = subparsers.add_parser("run")
+    run_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
+    run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help="")
+    run_parser.add_argument("--delay", type=float, default=DELAY_DEFAULT, help="")
+    run_parser.set_defaults(command=run)
+
+    show_parser = subparsers.add_parser("show")
+    show_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
+    show_parser.set_defaults(command=show)
+
+    args = argparser.parse_args(argv)
+    args.command(**vars(args))
