@@ -73,7 +73,8 @@ def shell(task):
     lines = []
     sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(sp.stdout.readline, ""):
-        print(stdout_line, end="")
+        stdout_line = stdout_line.strip()
+        print(stdout_line)
         lines.append(stdout_line)
     sp.stdout.close()
     return sp.wait(), lines

@@ -5,11 +5,11 @@ import zebr0_script
 
 
 def test_ok():
-    assert zebr0_script.shell("echo ok") == (0, ["ok\n"])
+    assert zebr0_script.shell("echo ok") == (0, ["ok"])
 
 
 def test_ko():
-    assert zebr0_script.shell("echo ko && false") == (1, ["ko\n"])
+    assert zebr0_script.shell("echo ko && false") == (1, ["ko"])
 
 
 def test_stdout(capsys):
