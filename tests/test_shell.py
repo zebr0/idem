@@ -22,3 +22,8 @@ def test_stdout(capsys):
     assert capsys.readouterr().out == "begin\n"
     t.join()
     assert capsys.readouterr().out == "end\n"
+
+
+def test_multiline(capsys):
+    assert zebr0_script.shell("echo one && echo two && echo three") == (0, ["one", "two", "three"])
+    assert capsys.readouterr().out == "one\ntwo\nthree\n"

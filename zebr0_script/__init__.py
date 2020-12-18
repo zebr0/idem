@@ -4,6 +4,7 @@ import os.path
 import subprocess
 import time
 from pathlib import Path
+from typing import Tuple, List
 
 import yaml
 import zebr0
@@ -69,14 +70,24 @@ def lookup(task, history_file, client):
     print("done")
 
 
-def shell(task):
+def shell(command: str) -> Tuple[int, List[str]]:
+    r"""
+    Executes a command with the system's shell.
+    Standard output will be shown and returned as a list of strings.
+    Beware that dynamic output such as "\\r" used in progress bars won't be rendered properly.
+
+    :param command: command to be executed
+    :return: the return code and the standard output as a list of strings
+    """
+
     lines = []
-    sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
-    for stdout_line in iter(sp.stdout.readline, ""):
-        stdout_line = stdout_line.strip()
-        print(stdout_line)
-        lines.append(stdout_line)
-    sp.stdout.close()
+
+    sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    for line in sp.stdout:
+        line = line.strip()
+        print(line)
+        lines.append(line)
+
     return sp.wait(), lines
 
 
