@@ -70,10 +70,11 @@ def lookup(task, history_file, client):
 
 
 def execute_command(task):
-    sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding=zebr0.ENCODING)
-    (stdout, stderr) = sp.communicate()
-    print(stdout, end="")
-    return sp.returncode == 0
+    sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+    for stdout_line in iter(sp.stdout.readline, ""):
+        print(stdout_line, end="")
+    sp.stdout.close()
+    return sp.wait() == 0
 
 
 def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):

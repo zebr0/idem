@@ -1,5 +1,6 @@
 import datetime
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -17,10 +18,19 @@ def server():
 
 def test_execute_command(capsys):
     with tempfile.TemporaryDirectory() as tmp:
-        assert zebr0_script.execute_command("echo ok && touch {}/test".format(tmp))
+        def execute():
+            assert zebr0_script.execute_command("echo ok && sleep 1 && echo ok && touch {}/test".format(tmp))
+
+        t = threading.Thread(target=execute)
+        t.start()
+        time.sleep(0.1)
+        assert capsys.readouterr().out == "ok\n"
+        time.sleep(1)
+        assert capsys.readouterr().out == "ok\n"
+
+        t.join()
         assert Path(tmp).joinpath("test").is_file()
         assert not zebr0_script.execute_command("false")
-        assert capsys.readouterr().out == "ok\n"
 
 
 def test_execute(monkeypatch, capsys):
