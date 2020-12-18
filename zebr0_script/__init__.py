@@ -69,18 +69,21 @@ def lookup(task, history_file, client):
     print("done")
 
 
-def execute_command(task):
+def shell(task):
+    lines = []
     sp = subprocess.Popen(task, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
     for stdout_line in iter(sp.stdout.readline, ""):
         print(stdout_line, end="")
+        lines.append(stdout_line)
     sp.stdout.close()
-    return sp.wait() == 0
+    return sp.wait(), lines
 
 
 def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
     # failure tolerance: max 4 attempts for each command to succeed
     for retry in reversed(range(attempts)):
-        if execute_command(task):
+        returncode, lines = shell(task)
+        if returncode == 0:
             history_file.write_text(task)
             print("done")
             break

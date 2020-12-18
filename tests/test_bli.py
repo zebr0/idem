@@ -16,10 +16,10 @@ def server():
         yield server
 
 
-def test_execute_command(capsys):
+def test_shell(capsys):
     with tempfile.TemporaryDirectory() as tmp:
         def execute():
-            assert zebr0_script.execute_command("echo ok && sleep 1 && echo ok && touch {}/test".format(tmp))
+            assert zebr0_script.shell("echo ok && sleep 1 && echo ok && touch {}/test".format(tmp)) == (0, ["ok\n", "ok\n"])
 
         t = threading.Thread(target=execute)
         t.start()
@@ -30,15 +30,15 @@ def test_execute_command(capsys):
 
         t.join()
         assert Path(tmp).joinpath("test").is_file()
-        assert not zebr0_script.execute_command("false")
+        assert zebr0_script.shell("false") == (1, [])
 
 
 def test_execute(monkeypatch, capsys):
     def fake_execute_command(_):
         print("ok")
-        return True
+        return 0, ["ok"]
 
-    monkeypatch.setattr(zebr0_script, "execute_command", fake_execute_command)
+    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
 
     with tempfile.TemporaryDirectory() as tmp:
         zebr0_script.execute("dummy", Path(tmp).joinpath("test"))
@@ -48,9 +48,9 @@ def test_execute(monkeypatch, capsys):
 def test_execute_ko(monkeypatch, capsys):
     def fake_execute_command(_):
         print("ko")
-        return False
+        return 1, ["ko"]
 
-    monkeypatch.setattr(zebr0_script, "execute_command", fake_execute_command)
+    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
 
     with tempfile.TemporaryDirectory() as tmp:
         zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 5, 0.1)
@@ -62,9 +62,9 @@ def test_execute_ko_then_ok(monkeypatch, capsys):
 
     def fake_execute_command(_):
         trick["count"] = trick.get("count", 0) + 1
-        return trick.get("count") == 3
+        return 0 if trick.get("count") == 3 else 1, []
 
-    monkeypatch.setattr(zebr0_script, "execute_command", fake_execute_command)
+    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
 
     with tempfile.TemporaryDirectory() as tmp:
         zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 3, 0.1)
