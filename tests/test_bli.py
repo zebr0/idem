@@ -15,44 +15,6 @@ def server():
         yield server
 
 
-def test_execute(monkeypatch, capsys):
-    def fake_execute_command(_):
-        print("ok")
-        return 0, ["ok"]
-
-    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
-
-    with tempfile.TemporaryDirectory() as tmp:
-        zebr0_script.execute("dummy", Path(tmp).joinpath("test"))
-        assert capsys.readouterr().out == "ok\ndone\n"
-
-
-def test_execute_ko(monkeypatch, capsys):
-    def fake_execute_command(_):
-        print("ko")
-        return 1, ["ko"]
-
-    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
-
-    with tempfile.TemporaryDirectory() as tmp:
-        zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 5, 0.1)
-        assert capsys.readouterr().out == "ko\nretrying\nko\nretrying\nko\nretrying\nko\nretrying\nko\nerror\n"
-
-
-def test_execute_ko_then_ok(monkeypatch, capsys):
-    trick = {}
-
-    def fake_execute_command(_):
-        trick["count"] = trick.get("count", 0) + 1
-        return 0 if trick.get("count") == 3 else 1, []
-
-    monkeypatch.setattr(zebr0_script, "shell", fake_execute_command)
-
-    with tempfile.TemporaryDirectory() as tmp:
-        zebr0_script.execute("dummy", Path(tmp).joinpath("test"), 3, 0.1)
-        assert capsys.readouterr().out == "retrying\nretrying\ndone\n"
-
-
 def test_lookup(server, capsys):
     server.data = {"data": "dummy\n"}
 
