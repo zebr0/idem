@@ -1,6 +1,5 @@
 import datetime
 import tempfile
-import threading
 import time
 from pathlib import Path
 
@@ -14,23 +13,6 @@ import zebr0_script
 def server():
     with zebr0.TestServer() as server:
         yield server
-
-
-def test_shell(capsys):
-    with tempfile.TemporaryDirectory() as tmp:
-        def execute():
-            assert zebr0_script.shell("echo ok && sleep 1 && echo ok && touch {}/test".format(tmp)) == (0, ["ok\n", "ok\n"])
-
-        t = threading.Thread(target=execute)
-        t.start()
-        time.sleep(0.1)
-        assert capsys.readouterr().out == "ok\n"
-        time.sleep(1)
-        assert capsys.readouterr().out == "ok\n"
-
-        t.join()
-        assert Path(tmp).joinpath("test").is_file()
-        assert zebr0_script.shell("false") == (1, [])
 
 
 def test_execute(monkeypatch, capsys):
