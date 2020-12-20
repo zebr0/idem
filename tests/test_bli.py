@@ -105,7 +105,7 @@ def test_run(monkeypatch, capsys):
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
         assert capsys.readouterr().out == "skipping test\nskipping {'yin': 'yang'}\n"
 
-        # todo: test errors
+        # todo: test errors (script must stop)
 
 
 def test_history(capsys):

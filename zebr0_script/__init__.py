@@ -10,7 +10,7 @@ import yaml
 import zebr0
 
 ATTEMPTS_DEFAULT = 4
-DELAY_DEFAULT = 10
+PAUSE_DEFAULT = 10
 
 
 # main function: prints a history of all executed commands
@@ -27,7 +27,7 @@ def history(directory, **_):
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, script, attempts, delay, **_):
+def run(url, levels, cache, configuration_file, directory, script, attempts, pause, **_):
     # ensures that history path exists
     if not os.path.isdir(directory):
         os.makedirs(directory)
@@ -40,12 +40,13 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, del
             print("executing", task)
 
             if isinstance(task, str):
-                trace = execute(task, attempts, delay)
+                trace = execute(task, attempts, pause)
                 if trace:
                     print("done")
                     history_file.write_text(trace)
                 else:
                     print("error")
+                    break
             else:
                 trace = lookup(task, client)
                 if trace:
@@ -53,6 +54,7 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, del
                     history_file.write_text(trace)
                 else:
                     print("error")
+                    break
 
 
 def show(url, levels, cache, configuration_file, directory: Path, script, **_):
@@ -100,17 +102,26 @@ def shell(command: str) -> Tuple[int, List[str]]:
     return sp.wait(), lines
 
 
-def execute(task, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
-    # failure tolerance: max 4 attempts for each command to succeed
-    for retry in reversed(range(attempts)):
-        returncode, lines = shell(task)
+def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> str:
+    """
+    Executes a command.
+    Several attempts will be made before considering it a failure.
+
+    :param command: command to execute
+    :param attempts: maximum number of attempts before considering it a failure
+    :param pause: in seconds, interval between two successive attempts
+    :return: the content to be written in the history file or an empty string if failed
+    """
+
+    for attempt in reversed(range(attempts)):  # from #attempts to 0
+        returncode, lines = shell(command)
         if returncode == 0:
-            return task
-        elif retry:  # on failure, if there are still retries to do, we wait before looping again
-            time.sleep(delay)
-            print("retrying")
+            return command
+        elif attempt:  # on failure, if there are still retries to do, we wait before looping again
+            print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
+            time.sleep(pause)
         else:
-            return
+            return ""
 
 
 def main(argv=None):
@@ -124,7 +135,7 @@ def main(argv=None):
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
     run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help="")
-    run_parser.add_argument("--delay", type=float, default=DELAY_DEFAULT, help="")
+    run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help="")
     run_parser.set_defaults(command=run)
 
     show_parser = subparsers.add_parser("show")
