@@ -4,7 +4,7 @@ import os.path
 import subprocess
 import time
 from pathlib import Path
-from typing import Tuple, List
+from typing import List
 
 import yaml
 import zebr0
@@ -81,43 +81,31 @@ def lookup(task, client):
     return str(task)
 
 
-def shell(command: str) -> Tuple[int, List[str]]:
-    r"""
-    Executes a command with the system's shell.
-    Standard output will be shown and returned as a list of strings.
-    Beware that dynamic output such as "\\r" used in progress bars won't be rendered properly.
-
-    :param command: command to be executed
-    :return: the return code and the standard output as a list of strings
-    """
-
-    lines = []
-
-    sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
-    for line in sp.stdout:
-        line = line.strip()
-        print(line)
-        lines.append(line)
-
-    return sp.wait(), lines
-
-
 def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> List[str]:
     """
-    Executes a command.
-    Several attempts will be made before considering it a failure.
+    Executes a command with the system's shell.
+    Several attempts will be made in case of failure, to cover for e.g. network issues.
+    Standard output will be shown and returned as a list of strings if successful.
+    Beware that dynamic output like the use of carriage return in progress bars won't be rendered properly.
 
     :param command: command to execute
-    :param attempts: maximum number of attempts before considering it a failure
-    :param pause: in seconds, interval between two successive attempts
-    :return: the standard output as a list of strings is successful, None otherwise
+    :param attempts: maximum number of attempts before being actually considered a failure
+    :param pause: delay in seconds between two attempts
+    :return: the standard output as a list of strings if successful, None otherwise
     """
 
-    for attempt in reversed(range(attempts)):  # from #attempts to 0
-        returncode, lines = shell(command)
-        if returncode == 0:
-            return lines
-        elif attempt:  # on failure, if there are still retries to do, we wait before looping again
+    for attempt in reversed(range(attempts)):  # [attempts-1 .. 0]
+        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+
+        stdout = []
+        for line in sp.stdout:
+            line = line.strip()
+            print(line)
+            stdout.append(line)
+
+        if sp.wait() == 0:  # if successful (i.e. the return code is 0)
+            return stdout
+        elif attempt != 0:
             print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
 
