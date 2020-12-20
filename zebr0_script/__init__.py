@@ -43,7 +43,7 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, pau
                 trace = execute(task, attempts, pause)
                 if trace:
                     print("done")
-                    history_file.write_text(trace)
+                    history_file.write_text(task)
                 else:
                     print("error")
                     break
@@ -102,7 +102,7 @@ def shell(command: str) -> Tuple[int, List[str]]:
     return sp.wait(), lines
 
 
-def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> str:
+def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> List[str]:
     """
     Executes a command.
     Several attempts will be made before considering it a failure.
@@ -110,18 +110,16 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     :param command: command to execute
     :param attempts: maximum number of attempts before considering it a failure
     :param pause: in seconds, interval between two successive attempts
-    :return: the content to be written in the history file or an empty string if failed
+    :return: the standard output as a list of strings is successful, None otherwise
     """
 
     for attempt in reversed(range(attempts)):  # from #attempts to 0
         returncode, lines = shell(command)
         if returncode == 0:
-            return command
+            return lines
         elif attempt:  # on failure, if there are still retries to do, we wait before looping again
             print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
-        else:
-            return ""
 
 
 def main(argv=None):

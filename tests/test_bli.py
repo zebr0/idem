@@ -88,7 +88,7 @@ def test_run(monkeypatch, capsys):
             yield {"yin": "yang"}, historyfile2
 
         def fake_execute(task, *_):
-            return task
+            return ["hello", "world"]
 
         def fake_lookup(task, *_):
             return str(task)
