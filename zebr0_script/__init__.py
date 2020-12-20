@@ -40,9 +40,19 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, del
             print("executing", task)
 
             if isinstance(task, str):
-                execute(task, history_file, attempts, delay)
+                trace = execute(task, attempts, delay)
+                if trace:
+                    print("done")
+                    history_file.write_text(trace)
+                else:
+                    print("error")
             else:
-                lookup(task, history_file, client)
+                trace = lookup(task, client)
+                if trace:
+                    print("done")
+                    history_file.write_text(trace)
+                else:
+                    print("error")
 
 
 def show(url, levels, cache, configuration_file, directory: Path, script, **_):
@@ -62,12 +72,11 @@ def recursive_lookup2(script, directory, client):
             print("unknown command, ignored:", task)
 
 
-def lookup(task, history_file, client):
+def lookup(task, client):
     path = Path(task.get("path"))
     path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
     path.write_text(client.get(task.get("lookup"), strip=False))
-    history_file.write_text(str(task))
-    print("done")
+    return str(task)
 
 
 def shell(command: str) -> Tuple[int, List[str]]:
@@ -91,20 +100,17 @@ def shell(command: str) -> Tuple[int, List[str]]:
     return sp.wait(), lines
 
 
-def execute(task, history_file, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
+def execute(task, attempts=ATTEMPTS_DEFAULT, delay=DELAY_DEFAULT):
     # failure tolerance: max 4 attempts for each command to succeed
     for retry in reversed(range(attempts)):
         returncode, lines = shell(task)
         if returncode == 0:
-            history_file.write_text(task)
-            print("done")
-            break
+            return task
         elif retry:  # on failure, if there are still retries to do, we wait before looping again
             time.sleep(delay)
             print("retrying")
         else:
-            print("error")
-            break
+            return
 
 
 def main(argv=None):

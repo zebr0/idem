@@ -1,27 +1,23 @@
 import zebr0_script
 
 
-def test_ok(monkeypatch, tmp_path, capsys):
+def test_ok(monkeypatch, capsys):
     monkeypatch.setattr(zebr0_script, "shell", lambda _: (0, []))
-    history_file = tmp_path.joinpath("history-file")
 
-    zebr0_script.execute("./global-thermonuclear-war", history_file)
+    assert zebr0_script.execute("./global-thermonuclear-war") == "./global-thermonuclear-war"
 
-    assert capsys.readouterr().out == "done\n"
-    assert history_file.read_text() == "./global-thermonuclear-war"
+    assert capsys.readouterr().out == ""
 
 
-def test_ko(monkeypatch, tmp_path, capsys):
+def test_ko(monkeypatch, capsys):
     monkeypatch.setattr(zebr0_script, "shell", lambda _: (1, []))
-    history_file = tmp_path.joinpath("history-file")
 
-    zebr0_script.execute("./global-thermonuclear-war", history_file, attempts=5, delay=0.1)
+    assert not zebr0_script.execute("./global-thermonuclear-war", attempts=5, delay=0.1)
 
-    assert capsys.readouterr().out == "retrying\nretrying\nretrying\nretrying\nerror\n"
-    assert not history_file.exists()
+    assert capsys.readouterr().out == "retrying\nretrying\nretrying\nretrying\n"
 
 
-def test_ko_then_ok(monkeypatch, tmp_path, capsys):
+def test_ko_then_ok(monkeypatch, capsys):
     variable = {"count": 0}  # a little trick since you can't update a normal "int" in mock_shell()
 
     def mock_shell(_):
@@ -33,9 +29,7 @@ def test_ko_then_ok(monkeypatch, tmp_path, capsys):
             return 0, []
 
     monkeypatch.setattr(zebr0_script, "shell", mock_shell)
-    history_file = tmp_path.joinpath("history-file")
 
-    zebr0_script.execute("./global-thermonuclear-war", history_file, delay=0.1)
+    assert zebr0_script.execute("./global-thermonuclear-war", delay=0.1) == "./global-thermonuclear-war"
 
-    assert capsys.readouterr().out == "retrying\nretrying\ndone\n"
-    assert history_file.read_text() == "./global-thermonuclear-war"
+    assert capsys.readouterr().out == "retrying\nretrying\n"

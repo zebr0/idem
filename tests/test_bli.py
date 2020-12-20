@@ -24,14 +24,12 @@ def test_lookup(server, capsys):
         client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
 
         testfile = tmp.joinpath("many/directories/test")
-        historyfile = tmp.joinpath("history")
         sdfsdf = {"lookup": "data", "path": testfile}
 
-        zebr0_script.lookup(sdfsdf, historyfile, client)
+        assert zebr0_script.lookup(sdfsdf, client) == str(sdfsdf)
 
         assert testfile.read_text() == "dummy\n"
-        assert historyfile.read_text() == str(sdfsdf)
-        assert capsys.readouterr().out == "done\n"
+        assert capsys.readouterr().out == ""
 
 
 def test_recursive_lookup2(server, capsys):
@@ -90,27 +88,24 @@ def test_run(monkeypatch, capsys):
             yield {"yin": "yang"}, historyfile2
 
         def fake_execute(task, *_):
-            print("task:", task)
+            return task
 
         def fake_lookup(task, *_):
-            print("lookup:", str(task))
+            return str(task)
 
         monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
         monkeypatch.setattr(zebr0_script, "execute", fake_execute)
         monkeypatch.setattr(zebr0_script, "lookup", fake_lookup)
 
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "executing test\ntask: test\nexecuting {'yin': 'yang'}\nlookup: {'yin': 'yang'}\n"
-
-        historyfile1.touch()
-
-        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "skipping test\nexecuting {'yin': 'yang'}\nlookup: {'yin': 'yang'}\n"
-
-        historyfile2.touch()
+        assert capsys.readouterr().out == "executing test\ndone\nexecuting {'yin': 'yang'}\ndone\n"
+        assert historyfile1.read_text() == "test"
+        assert historyfile2.read_text() == "{'yin': 'yang'}"
 
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
         assert capsys.readouterr().out == "skipping test\nskipping {'yin': 'yang'}\n"
+
+        # todo: test errors
 
 
 def test_history(capsys):
