@@ -5,7 +5,8 @@ import zebr0_script
 
 
 def test_ok(capsys):
-    assert zebr0_script.execute("echo ok") == ["ok"]
+    command = "echo ok"
+    assert zebr0_script.execute(command) == {"command": command, "stdout": ["ok"]}
     assert capsys.readouterr().out == "ok\n"
 
 
@@ -27,10 +28,12 @@ def test_stdout(capsys):
 
 
 def test_multiline(capsys):
-    assert zebr0_script.execute("echo one && echo two && echo three") == ["one", "two", "three"]
+    command = "echo one && echo two && echo three"
+    assert zebr0_script.execute(command) == {"command": command, "stdout": ["one", "two", "three"]}
     assert capsys.readouterr().out == "one\ntwo\nthree\n"
 
 
 def test_ko_then_ok(tmp_path, capsys):
-    assert zebr0_script.execute(f"[ -f {tmp_path}/file ] || ! touch {tmp_path}/file", pause=0.1) == []
+    command = f"[ -f {tmp_path}/file ] || ! touch {tmp_path}/file"
+    assert zebr0_script.execute(command, pause=0.1) == {"command": command, "stdout": []}
     assert capsys.readouterr().out == "failed, 3 attempts remaining, will try again in 0.1 seconds\n"

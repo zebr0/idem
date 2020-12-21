@@ -4,7 +4,6 @@ import os.path
 import subprocess
 import time
 from pathlib import Path
-from typing import List
 
 import yaml
 import zebr0
@@ -81,7 +80,7 @@ def lookup(task, client):
     return str(task)
 
 
-def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> List[str]:
+def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> dict:
     """
     Executes a command with the system's shell.
     Several attempts will be made in case of failure, to cover for e.g. network issues.
@@ -91,7 +90,7 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     :param command: command to execute
     :param attempts: maximum number of attempts before being actually considered a failure
     :param pause: delay in seconds between two attempts
-    :return: the standard output as a list of strings if successful, None otherwise
+    :return: if successful, an execution report as a dictionary
     """
 
     for attempt in reversed(range(attempts)):  # [attempts-1 .. 0]
@@ -104,7 +103,7 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
             stdout.append(line)
 
         if sp.wait() == 0:  # if successful (i.e. the return code is 0)
-            return stdout
+            return {"command": command, "stdout": stdout}
         elif attempt != 0:
             print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
