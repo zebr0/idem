@@ -94,7 +94,7 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     """
 
     for attempt in reversed(range(attempts)):  # [attempts-1 .. 0]
-        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True, encoding=zebr0.ENCODING)
 
         stdout = []
         for line in sp.stdout:
