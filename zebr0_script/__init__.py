@@ -11,6 +11,9 @@ import zebr0
 ATTEMPTS_DEFAULT = 4
 PAUSE_DEFAULT = 10
 
+KEY = "key"
+TARGET = "target"
+
 
 # main function: prints a history of all executed commands
 def history(directory, **_):
@@ -47,10 +50,10 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, pau
                     print("error")
                     break
             else:
-                trace = lookup(task, client)
+                trace = fetch_to_disk(client, **task)
                 if trace:
                     print("done")
-                    history_file.write_text(trace)
+                    history_file.write_text(str(trace))
                 else:
                     print("error")
                     break
@@ -66,18 +69,35 @@ def recursive_lookup2(script, directory, client):
     for task in yaml.load(client.get(script), Loader=yaml.BaseLoader):
         if isinstance(task, dict) and task.get("include"):
             yield from recursive_lookup2(task.get("include"), directory, client)
-        elif isinstance(task, str) or isinstance(task, dict) and task.get("lookup") and task.get("path"):
+        elif isinstance(task, str) or isinstance(task, dict) and task.get(KEY) and task.get(TARGET):
             md5 = hashlib.md5(str(task).encode("utf-8")).hexdigest()
             yield task, directory.joinpath(md5)
         else:
             print("unknown command, ignored:", task)
 
 
-def lookup(task, client):
-    path = Path(task.get("path"))
-    path.parent.mkdir(parents=True, exist_ok=True)  # ensures the parent directories exist
-    path.write_text(client.get(task.get("lookup"), strip=False))
-    return str(task)
+def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
+    """
+    Fetches a key from the key-value server and writes its value into a target file.
+
+    :param client: zebr0 Client instance to the key-value server
+    :param key: key to look for
+    :param target: path to the target file
+    :return: if successful, an execution report as a dictionary
+    """
+
+    value = client.get(key, strip=False)
+    if not value:
+        print(f"key '{key}' not found on server {client.url}")
+    else:
+        try:
+            target_path = Path(target)
+            target_path.parent.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
+            target_path.write_text(value)
+
+            return {KEY: key, TARGET: target}
+        except OSError as error:
+            print(error)
 
 
 def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> dict:

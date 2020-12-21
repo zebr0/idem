@@ -15,26 +15,9 @@ def server():
         yield server
 
 
-def test_lookup(server, capsys):
-    server.data = {"data": "dummy\n"}
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp = Path(tmp)
-
-        client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
-
-        testfile = tmp.joinpath("many/directories/test")
-        sdfsdf = {"lookup": "data", "path": testfile}
-
-        assert zebr0_script.lookup(sdfsdf, client) == str(sdfsdf)
-
-        assert testfile.read_text() == "dummy\n"
-        assert capsys.readouterr().out == ""
-
-
 def test_recursive_lookup2(server, capsys):
     server.data = {"script": ["install package xxx",
-                              {"lookup": "configuration-file", "path": "/etc/xxx/conf.ini"},
+                              {"key": "configuration-file", "target": "/etc/xxx/conf.ini"},
                               "chmod 400 /etc/xxx/conf.ini",
                               {"include": "second-script"},
                               {"make-coffee": "black"}],
@@ -44,7 +27,7 @@ def test_recursive_lookup2(server, capsys):
     client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
     result = zebr0_script.recursive_lookup2("script", Path("/tmp"), client)
     assert list(result) == [("install package xxx", Path("/tmp/edd85cad01d197aa80d9edcbfce9a575")),
-                            ({"lookup": "configuration-file", "path": "/etc/xxx/conf.ini"}, Path("/tmp/b61788ba0623fc4d9114699ab00d8bf7")),
+                            ({"key": "configuration-file", "target": "/etc/xxx/conf.ini"}, Path("/tmp/167bdc0353d79a23b554f5dcc0fafca5")),
                             ("chmod 400 /etc/xxx/conf.ini", Path("/tmp/df6218e3bf04bcfe1670d1009b08dcbf")),
                             ("install package yyy", Path("/tmp/fdeb9fb70de466a3975f25725c897913")),
                             ("yyy configure network", Path("/tmp/c39b670739e8ece59c0f53b6b1b0dfb3"))]
@@ -85,25 +68,25 @@ def test_run(monkeypatch, capsys):
 
         def fake_recursive_lookup2(*_):
             yield "test", historyfile1
-            yield {"yin": "yang"}, historyfile2
+            yield {"key": "yin", "target": "yang"}, historyfile2
 
         def fake_execute(task, *_):
             return ["hello", "world"]
 
-        def fake_lookup(task, *_):
-            return str(task)
+        def fake_fetch_to_disk(_, key, target):
+            return {"key": key, "target": target}
 
         monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
         monkeypatch.setattr(zebr0_script, "execute", fake_execute)
-        monkeypatch.setattr(zebr0_script, "lookup", fake_lookup)
+        monkeypatch.setattr(zebr0_script, "fetch_to_disk", fake_fetch_to_disk)
 
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "executing test\ndone\nexecuting {'yin': 'yang'}\ndone\n"
+        assert capsys.readouterr().out == "executing test\ndone\nexecuting {'key': 'yin', 'target': 'yang'}\ndone\n"
         assert historyfile1.read_text() == "test"
-        assert historyfile2.read_text() == "{'yin': 'yang'}"
+        assert historyfile2.read_text() == "{'key': 'yin', 'target': 'yang'}"
 
         zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "skipping test\nskipping {'yin': 'yang'}\n"
+        assert capsys.readouterr().out == "skipping test\nskipping {'key': 'yin', 'target': 'yang'}\n"
 
         # todo: test errors (script must stop)
 
