@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import json
 import tempfile
 import time
 from pathlib import Path
@@ -15,25 +17,6 @@ def server():
         yield server
 
 
-def test_recursive_lookup2(server, capsys):
-    server.data = {"script": ["install package xxx",
-                              {"key": "configuration-file", "target": "/etc/xxx/conf.ini"},
-                              "chmod 400 /etc/xxx/conf.ini",
-                              {"include": "second-script"},
-                              {"make-coffee": "black"}],
-                   "second-script": ["install package yyy",
-                                     "yyy configure network"]}
-
-    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
-    result = zebr0_script.recursive_lookup2("script", Path("/tmp"), client)
-    assert list(result) == [("install package xxx", Path("/tmp/edd85cad01d197aa80d9edcbfce9a575")),
-                            ({"key": "configuration-file", "target": "/etc/xxx/conf.ini"}, Path("/tmp/167bdc0353d79a23b554f5dcc0fafca5")),
-                            ("chmod 400 /etc/xxx/conf.ini", Path("/tmp/df6218e3bf04bcfe1670d1009b08dcbf")),
-                            ("install package yyy", Path("/tmp/fdeb9fb70de466a3975f25725c897913")),
-                            ("yyy configure network", Path("/tmp/c39b670739e8ece59c0f53b6b1b0dfb3"))]
-    assert capsys.readouterr().out == "unknown command, ignored: {'make-coffee': 'black'}\n"
-
-
 def test_show(monkeypatch, capsys):
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -44,7 +27,7 @@ def test_show(monkeypatch, capsys):
             yield "test1", historyfile1
             yield "test2", historyfile2
 
-        monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
+        monkeypatch.setattr(zebr0_script, "recursive_fetch_script", fake_recursive_lookup2)
 
         zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp, "script")
         assert capsys.readouterr().out == "  todo test1\n  todo test2\n"
@@ -70,13 +53,13 @@ def test_run(monkeypatch, capsys):
             yield "test", historyfile1
             yield {"key": "yin", "target": "yang"}, historyfile2
 
-        def fake_execute(task, *_):
+        def fake_execute(*_):
             return ["hello", "world"]
 
         def fake_fetch_to_disk(_, key, target):
             return {"key": key, "target": target}
 
-        monkeypatch.setattr(zebr0_script, "recursive_lookup2", fake_recursive_lookup2)
+        monkeypatch.setattr(zebr0_script, "recursive_fetch_script", fake_recursive_lookup2)
         monkeypatch.setattr(zebr0_script, "execute", fake_execute)
         monkeypatch.setattr(zebr0_script, "fetch_to_disk", fake_fetch_to_disk)
 
@@ -111,7 +94,7 @@ def test_history(capsys):
 
 
 def test_cli(server, capsys):
-    server.data = {"script": ["echo one", "echo two"]}
+    server.data = {"script": ["echo one && sleep 1", "echo two"]}
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -123,23 +106,25 @@ def test_cli(server, capsys):
         assert capsys.readouterr().out == ""
 
         zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "show"])
-        assert capsys.readouterr().out == "  todo echo one\n  todo echo two\n"
+        assert capsys.readouterr().out == "  todo echo one && sleep 1\n  todo echo two\n"
 
         zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "run"])
-        assert capsys.readouterr().out == "executing echo one\none\ndone\nexecuting echo two\ntwo\ndone\n"
+        assert capsys.readouterr().out == "executing echo one && sleep 1\none\ndone\nexecuting echo two\ntwo\ndone\n"
 
-        historyfile1 = Path(tmp).joinpath("history").joinpath("24679074dc99cd3d91a6ae4b54e38941")
+        history_file1_md5 = hashlib.md5(json.dumps("echo one && sleep 1").encode(zebr0.ENCODING)).hexdigest()
+        historyfile1 = Path(tmp).joinpath("history").joinpath(history_file1_md5)
         hf1mtime = historyfile1.stat().st_mtime
-        historyfile2 = Path(tmp).joinpath("history").joinpath("9871953929eceff66bcc5ed46fe462e7")
+        history_file2_md5 = hashlib.md5(json.dumps("echo two").encode(zebr0.ENCODING)).hexdigest()
+        historyfile2 = Path(tmp).joinpath("history").joinpath(history_file2_md5)
         hf2mtime = historyfile2.stat().st_mtime
 
         zebr0_script.main(["-d", str(history), "history"])
-        assert capsys.readouterr().out == "24679074dc99cd3d91a6ae4b54e38941 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one\n" + "9871953929eceff66bcc5ed46fe462e7 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
+        assert capsys.readouterr().out == history_file1_md5 + " " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one && sleep 1\n" + history_file2_md5 + " " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
 
         zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "show"])
-        assert capsys.readouterr().out == "  done echo one\n  done echo two\n"
+        assert capsys.readouterr().out == "  done echo one && sleep 1\n  done echo two\n"
 
         zebr0_script.main(["-f", str(configuration_file), "-d", str(history), "run"])
-        assert capsys.readouterr().out == "skipping echo one\nskipping echo two\n"
+        assert capsys.readouterr().out == "skipping echo one && sleep 1\nskipping echo two\n"
 
 # TODO: tests connection ko & tests script or lookup ko

@@ -1,0 +1,74 @@
+from pathlib import Path
+
+import pytest
+import zebr0
+
+import zebr0_script
+
+
+@pytest.fixture(scope="module")
+def server():
+    with zebr0.TestServer() as server:
+        yield server
+
+
+def test_ok(server, tmp_path, capsys):
+    server.data = {"script": ["install package xxx",
+                              {"key": "configuration-file", "target": "/etc/xxx/conf.ini"},
+                              "chmod 400 /etc/xxx/conf.ini",
+                              {"include": "second-script"},
+                              {"make-coffee": "black"}],
+                   "second-script": ["install package yyy",
+                                     "yyy configure network"]}
+    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+    result = zebr0_script.recursive_fetch_script(client, "script", tmp_path)
+    assert list(result) == [("install package xxx", tmp_path.joinpath("e60305c56524b749c03a2c648d33e791")),
+                            ({"key": "configuration-file", "target": "/etc/xxx/conf.ini"}, tmp_path.joinpath("c065878911c6b3beee171d12fed19aa2")),
+                            ("chmod 400 /etc/xxx/conf.ini", tmp_path.joinpath("8b982863e398cfbe84dc334c3b02164a")),
+                            ("install package yyy", tmp_path.joinpath("a71c44f4d35f54f68fe8930a1c29148f")),
+                            ("yyy configure network", tmp_path.joinpath("f55c297fd62c279cf13b0e2e40aac570"))]
+    assert capsys.readouterr().out == 'malformed task, ignored: {"make-coffee": "black"}\n'
+
+
+def test_ko_key_not_found(server, tmp_path, capsys):
+    server.data = {}
+    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+    result = zebr0_script.recursive_fetch_script(client, "script", tmp_path)
+    assert list(result) == []
+    assert capsys.readouterr().out == "key 'script' not found on server http://localhost:8000\n"
+
+
+def test_ko_not_a_script(server, tmp_path, capsys):
+    server.data = {"script": "not a script"}
+    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+    result = zebr0_script.recursive_fetch_script(client, "script", tmp_path)
+    assert list(result) == []
+    assert capsys.readouterr().out == "key 'script' on server http://localhost:8000 is not a proper yaml or json list\n"
+
+
+def test_ok_include_key_not_found(server, tmp_path, capsys):
+    server.data = {"script": ["install package xxx",
+                              {"include": "second-script"},
+                              "install package yyy"]}
+    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+    result = zebr0_script.recursive_fetch_script(client, "script", tmp_path)
+    assert list(result) == [("install package xxx", tmp_path.joinpath("e60305c56524b749c03a2c648d33e791")),
+                            ("install package yyy", tmp_path.joinpath("a71c44f4d35f54f68fe8930a1c29148f"))]
+    assert capsys.readouterr().out == "key 'second-script' not found on server http://localhost:8000\n"
+
+
+def test_ok_include_not_a_script(server, tmp_path, capsys):
+    server.data = {"script": ["install package xxx",
+                              {"include": "second-script"},
+                              "install package yyy"],
+                   "second-script": "not a script"}
+    client = zebr0.Client("http://localhost:8000", configuration_file=Path(""))
+
+    result = zebr0_script.recursive_fetch_script(client, "script", tmp_path)
+    assert list(result) == [("install package xxx", tmp_path.joinpath("e60305c56524b749c03a2c648d33e791")),
+                            ("install package yyy", tmp_path.joinpath("a71c44f4d35f54f68fe8930a1c29148f"))]
+    assert capsys.readouterr().out == "key 'second-script' on server http://localhost:8000 is not a proper yaml or json list\n"

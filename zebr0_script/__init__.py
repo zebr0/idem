@@ -1,9 +1,11 @@
 import datetime
 import hashlib
+import json
 import os.path
 import subprocess
 import time
 from pathlib import Path
+from typing import Tuple, Iterator, Any
 
 import yaml
 import zebr0
@@ -11,6 +13,7 @@ import zebr0
 ATTEMPTS_DEFAULT = 4
 PAUSE_DEFAULT = 10
 
+INCLUDE = "include"
 KEY = "key"
 TARGET = "target"
 
@@ -35,7 +38,7 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, pau
         os.makedirs(directory)
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, history_file in recursive_lookup2(script, directory, client):
+    for task, history_file in recursive_fetch_script(client, script, directory):
         if history_file.is_file():
             print("skipping", task)
         else:
@@ -61,19 +64,39 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, pau
 
 def show(url, levels, cache, configuration_file, directory: Path, script, **_):
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, history_file in recursive_lookup2(script, directory, client):
+    for task, history_file in recursive_fetch_script(client, script, directory):
         print("  todo" if not history_file.is_file() else "  done", task)
 
 
-def recursive_lookup2(script, directory, client):
-    for task in yaml.load(client.get(script), Loader=yaml.BaseLoader):
-        if isinstance(task, dict) and task.get("include"):
-            yield from recursive_lookup2(task.get("include"), directory, client)
-        elif isinstance(task, str) or isinstance(task, dict) and task.get(KEY) and task.get(TARGET):
-            md5 = hashlib.md5(str(task).encode("utf-8")).hexdigest()
-            yield task, directory.joinpath(md5)
+def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Path]]:
+    """
+    Fetches a script from the key-value server, validates the tasks' structure and fetches the "include" tasks recursively.
+
+    Beware that malformed tasks are ignored.
+    Also, "key not found" and "key is not a proper yaml or json list" errors are non-blocking in "include" tasks.
+
+    :param client: zebr0 Client instance to the key-value server
+    :param key: key of the script to look for
+    :param reports_path: Path to the reports' directory
+    :return: the script's valid tasks and the corresponding report Paths
+    """
+
+    value = client.get(key)
+    if not value:
+        print(f"key '{key}' not found on server {client.url}")
+    else:
+        tasks = yaml.load(value, Loader=yaml.BaseLoader)
+        if not isinstance(tasks, list):
+            print(f"key '{key}' on server {client.url} is not a proper yaml or json list")
         else:
-            print("unknown command, ignored:", task)
+            for task in tasks:
+                if isinstance(task, dict) and task.keys() == {INCLUDE}:
+                    yield from recursive_fetch_script(client, task.get(INCLUDE), reports_path)
+                elif isinstance(task, str) or isinstance(task, dict) and task.keys() == {KEY, TARGET}:
+                    md5 = hashlib.md5(json.dumps(task).encode(zebr0.ENCODING)).hexdigest()
+                    yield task, reports_path.joinpath(md5)
+                else:
+                    print("malformed task, ignored:", json.dumps(task))
 
 
 def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
