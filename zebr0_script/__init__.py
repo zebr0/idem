@@ -5,7 +5,7 @@ import os.path
 import subprocess
 import time
 from pathlib import Path
-from typing import Tuple, Iterator, Any
+from typing import Tuple, Iterator, Any, Optional, List
 
 import yaml
 import zebr0
@@ -19,26 +19,26 @@ TARGET = "target"
 
 
 # main function: prints a history of all executed commands
-def history(directory, **_):
+def history(reports_path, **_):
     def _get_mtime(_file):
-        return os.path.getmtime(os.path.join(directory, _file))
+        return os.path.getmtime(os.path.join(reports_path, _file))
 
-    if os.path.isdir(directory):
-        for filename in sorted(os.listdir(directory), key=_get_mtime):
-            with open(os.path.join(directory, filename)) as file:
+    if os.path.isdir(reports_path):
+        for filename in sorted(os.listdir(reports_path), key=_get_mtime):
+            with open(os.path.join(reports_path, filename)) as file:
                 timestamp = _get_mtime(filename)
                 strformat = datetime.datetime.fromtimestamp(timestamp).strftime("%c")
                 print(filename, strformat, file.read().strip())
 
 
 # main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, directory, script, attempts, pause, **_):
+def run(url, levels, cache, configuration_file, reports_path, script, attempts, pause, **_):
     # ensures that history path exists
-    if not os.path.isdir(directory):
-        os.makedirs(directory)
+    if not os.path.isdir(reports_path):
+        os.makedirs(reports_path)
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, history_file in recursive_fetch_script(client, script, directory):
+    for task, history_file in recursive_fetch_script(client, script, reports_path):
         if history_file.is_file():
             print("skipping", task)
         else:
@@ -62,10 +62,21 @@ def run(url, levels, cache, configuration_file, directory, script, attempts, pau
                     break
 
 
-def show(url, levels, cache, configuration_file, directory: Path, script, **_):
+def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
+    """
+    Fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not.
+
+    :param url: URL of the key-value server, defaults to https://hub.zebr0.io
+    :param levels: levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
+    :param cache: in seconds, the duration of the cache of http responses, defaults to 300 seconds
+    :param configuration_file: path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
+    :param reports_path: Path to the reports' directory
+    :param key: key of the script to look for
+    """
+
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, history_file in recursive_fetch_script(client, script, directory):
-        print("  todo" if not history_file.is_file() else "  done", task)
+    for task, report_path in recursive_fetch_script(client, key, reports_path):
+        print("todo:" if not report_path.exists() else "done:", json.dumps(task))
 
 
 def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Path]]:
@@ -154,7 +165,7 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
 
 def main(argv=None):
     argparser = zebr0.build_argument_parser(description="Minimalist local provisioning.")
-    argparser.add_argument("-d", "--directory", type=Path, default=Path("/var/zebr0/history"), help="path to the history files directory (default: /var/zebr0/history)")
+    argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="")
     subparsers = argparser.add_subparsers()
 
     history_parser = subparsers.add_parser("history")
@@ -167,7 +178,7 @@ def main(argv=None):
     run_parser.set_defaults(command=run)
 
     show_parser = subparsers.add_parser("show")
-    show_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
+    show_parser.add_argument("key", nargs="?", default="script", help="script identifier in the repository (default: script)")
     show_parser.set_defaults(command=show)
 
     args = argparser.parse_args(argv)
