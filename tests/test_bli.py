@@ -17,37 +17,6 @@ def server():
         yield server
 
 
-def test_run(monkeypatch, capsys):
-    with tempfile.TemporaryDirectory() as tmp:
-        historypath = Path(tmp).joinpath("history")
-        historyfile1 = historypath.joinpath("historyfile1")
-        historyfile2 = historypath.joinpath("historyfile2")
-
-        def fake_recursive_lookup2(*_):
-            yield "test", historyfile1
-            yield {"key": "yin", "target": "yang"}, historyfile2
-
-        def fake_execute(*_):
-            return ["hello", "world"]
-
-        def fake_fetch_to_disk(_, key, target):
-            return {"key": key, "target": target}
-
-        monkeypatch.setattr(zebr0_script, "recursive_fetch_script", fake_recursive_lookup2)
-        monkeypatch.setattr(zebr0_script, "execute", fake_execute)
-        monkeypatch.setattr(zebr0_script, "fetch_to_disk", fake_fetch_to_disk)
-
-        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "executing test\ndone\nexecuting {'key': 'yin', 'target': 'yang'}\ndone\n"
-        assert historyfile1.read_text() == "test"
-        assert historyfile2.read_text() == "{'key': 'yin', 'target': 'yang'}"
-
-        zebr0_script.run("http://localhost:8001", [], 1, Path(""), historypath, "script", 4, 1)
-        assert capsys.readouterr().out == "skipping test\nskipping {'key': 'yin', 'target': 'yang'}\n"
-
-        # todo: test errors (script must stop)
-
-
 def test_history(capsys):
     with tempfile.TemporaryDirectory() as tmp:
         historypath = Path(tmp).joinpath("history")
@@ -56,15 +25,15 @@ def test_history(capsys):
 
         historypath.mkdir()
         historyfile1 = historypath.joinpath("historyfile1")
-        historyfile1.write_text("hello")
+        historyfile1.write_text('{"hello": "world"}')
         hf1mtime = historyfile1.stat().st_mtime
         time.sleep(0.1)
         historyfile2 = historypath.joinpath("historyfile2")
-        historyfile2.write_text("no way")
+        historyfile2.write_text('{"no": "way"}')
         hf2mtime = historyfile2.stat().st_mtime
 
         zebr0_script.history(historypath)
-        assert capsys.readouterr().out == "historyfile1 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " hello\nhistoryfile2 " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " no way\n"
+        assert capsys.readouterr().out == "historyfile1 " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + ' {"hello": "world"}\nhistoryfile2 ' + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + ' {"no": "way"}\n'
 
 
 def test_cli(server, capsys):
@@ -83,7 +52,7 @@ def test_cli(server, capsys):
         assert capsys.readouterr().out == 'todo: "echo one && sleep 1"\ntodo: "echo two"\n'
 
         zebr0_script.main(["-f", str(configuration_file), "-r", str(history), "run"])
-        assert capsys.readouterr().out == "executing echo one && sleep 1\none\ndone\nexecuting echo two\ntwo\ndone\n"
+        assert capsys.readouterr().out == 'executing: "echo one && sleep 1"\none\nsuccess: "echo one && sleep 1"\nexecuting: "echo two"\ntwo\nsuccess: "echo two"\n'
 
         history_file1_md5 = hashlib.md5(json.dumps("echo one && sleep 1").encode(zebr0.ENCODING)).hexdigest()
         historyfile1 = Path(tmp).joinpath("history").joinpath(history_file1_md5)
@@ -93,12 +62,13 @@ def test_cli(server, capsys):
         hf2mtime = historyfile2.stat().st_mtime
 
         zebr0_script.main(["-r", str(history), "history"])
-        assert capsys.readouterr().out == history_file1_md5 + " " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + " echo one && sleep 1\n" + history_file2_md5 + " " + datetime.datetime.fromtimestamp(hf2mtime).strftime("%c") + " echo two\n"
+        assert capsys.readouterr().out == history_file1_md5 + " " + datetime.datetime.fromtimestamp(hf1mtime).strftime("%c") + ' {"command": "echo one && sleep 1", "stdout": ["one"]}\n' + history_file2_md5 + " " + datetime.datetime.fromtimestamp(hf2mtime).strftime(
+            "%c") + ' {"command": "echo two", "stdout": ["two"]}\n'
 
         zebr0_script.main(["-f", str(configuration_file), "-r", str(history), "show"])
         assert capsys.readouterr().out == 'done: "echo one && sleep 1"\ndone: "echo two"\n'
 
         zebr0_script.main(["-f", str(configuration_file), "-r", str(history), "run"])
-        assert capsys.readouterr().out == "skipping echo one && sleep 1\nskipping echo two\n"
+        assert capsys.readouterr().out == 'skipping: "echo one && sleep 1"\nskipping: "echo two"\n'
 
 # TODO: tests connection ko & tests script or lookup ko

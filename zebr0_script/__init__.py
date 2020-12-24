@@ -28,48 +28,57 @@ def history(reports_path, **_):
             with open(os.path.join(reports_path, filename)) as file:
                 timestamp = _get_mtime(filename)
                 strformat = datetime.datetime.fromtimestamp(timestamp).strftime("%c")
-                print(filename, strformat, file.read().strip())
+                print(filename, strformat, json.dumps(json.loads(file.read().strip())))
 
 
-# main function: downloads then processes a given script
-def run(url, levels, cache, configuration_file, reports_path, script, attempts, pause, **_):
-    # ensures that history path exists
-    if not os.path.isdir(reports_path):
-        os.makedirs(reports_path)
+def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT, **_) -> None:
+    """
+    Fetches a script from the key-value server and executes its tasks in order.
+    On each success, a report file is created, which serves as an "idempotence" marker not to run the task again.
+    On failure, the whole loop stops.
+
+    :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
+    :param levels: (zebr0) levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
+    :param cache: (zebr0) in seconds, the duration of the cache of http responses, defaults to 300 seconds
+    :param configuration_file: (zebr0) path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
+    :param reports_path: Path to the reports' directory
+    :param key: key of the script to look for
+    :param attempts: maximum number of attempts before a task is actually considered a failure
+    :param pause: delay in seconds between two attempts
+    """
+
+    reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, history_file in recursive_fetch_script(client, script, reports_path):
-        if history_file.is_file():
-            print("skipping", task)
+    for task, report_path in recursive_fetch_script(client, key, reports_path):
+        task_json = json.dumps(task)
+
+        if report_path.exists():
+            print("skipping:", task_json)
         else:
-            print("executing", task)
+            print("executing:", task_json)
 
             if isinstance(task, str):
-                trace = execute(task, attempts, pause)
-                if trace:
-                    print("done")
-                    history_file.write_text(task)
-                else:
-                    print("error")
-                    break
+                report = execute(task, attempts, pause)
             else:
-                trace = fetch_to_disk(client, **task)
-                if trace:
-                    print("done")
-                    history_file.write_text(str(trace))
-                else:
-                    print("error")
-                    break
+                report = fetch_to_disk(client, **task)
+
+            if report:
+                print("success:", task_json)
+                report_path.write_text(json.dumps(report, indent=2))
+            else:
+                print("error:", task_json)
+                break
 
 
 def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
     """
     Fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not.
 
-    :param url: URL of the key-value server, defaults to https://hub.zebr0.io
-    :param levels: levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
-    :param cache: in seconds, the duration of the cache of http responses, defaults to 300 seconds
-    :param configuration_file: path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
+    :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
+    :param levels: (zebr0) levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
+    :param cache: (zebr0) in seconds, the duration of the cache of http responses, defaults to 300 seconds
+    :param configuration_file: (zebr0) path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
     :param reports_path: Path to the reports' directory
     :param key: key of the script to look for
     """
@@ -172,7 +181,7 @@ def main(argv=None):
     history_parser.set_defaults(command=history)
 
     run_parser = subparsers.add_parser("run")
-    run_parser.add_argument("script", nargs="?", default="script", help="script identifier in the repository (default: script)")
+    run_parser.add_argument("key", nargs="?", default="script", help="script identifier in the repository (default: script)")
     run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help="")
     run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help="")
     run_parser.set_defaults(command=run)
