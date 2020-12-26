@@ -1,7 +1,6 @@
 import datetime
 import hashlib
 import json
-import os.path
 import subprocess
 import time
 from pathlib import Path
@@ -18,17 +17,20 @@ KEY = "key"
 TARGET = "target"
 
 
-# main function: prints a history of all executed commands
-def history(reports_path, **_):
-    def _get_mtime(_file):
-        return os.path.getmtime(os.path.join(reports_path, _file))
+def log(reports_path: Path, **_) -> None:
+    """
+    Prints a chronologically ordered list of the report files and their content.
 
-    if os.path.isdir(reports_path):
-        for filename in sorted(os.listdir(reports_path), key=_get_mtime):
-            with open(os.path.join(reports_path, filename)) as file:
-                timestamp = _get_mtime(filename)
-                strformat = datetime.datetime.fromtimestamp(timestamp).strftime("%c")
-                print(filename, strformat, json.dumps(json.loads(file.read().strip())))
+    :param reports_path: Path to the reports' directory
+    """
+
+    def get_mtime(path):
+        return path.stat().st_mtime
+
+    if reports_path.exists():
+        for file in filter(lambda p: p.is_file(), sorted(reports_path.iterdir(), key=get_mtime)):
+            strformat = datetime.datetime.fromtimestamp(get_mtime(file)).strftime("%c")
+            print(file.name, strformat, file.read_text(encoding=zebr0.ENCODING).strip())
 
 
 def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT, **_) -> None:
@@ -65,7 +67,7 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
 
             if report:
                 print("success:", task_json)
-                report_path.write_text(json.dumps(report, indent=2))
+                report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
             else:
                 print("error:", task_json)
                 break
@@ -136,7 +138,7 @@ def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
         try:
             target_path = Path(target)
             target_path.parent.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
-            target_path.write_text(value)
+            target_path.write_text(value, encoding=zebr0.ENCODING)
 
             return {KEY: key, TARGET: target}
         except OSError as error:
@@ -177,8 +179,8 @@ def main(argv=None):
     argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="")
     subparsers = argparser.add_subparsers()
 
-    history_parser = subparsers.add_parser("history")
-    history_parser.set_defaults(command=history)
+    log_parser = subparsers.add_parser("log")
+    log_parser.set_defaults(command=log)
 
     run_parser = subparsers.add_parser("run")
     run_parser.add_argument("key", nargs="?", default="script", help="script identifier in the repository (default: script)")
