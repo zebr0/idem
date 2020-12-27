@@ -174,23 +174,51 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
             time.sleep(pause)
 
 
-def main(argv=None):
-    argparser = zebr0.build_argument_parser(description="Minimalist local provisioning.")
-    argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="")
+def main(args: Optional[List[str]] = None) -> None:
+    """
+    usage: [-h] [-u <url>] [-l [<level> [<level> ...]]] [-c <duration>] [-f <path>] [-r <path>] {show,run,log} ...
+
+    Minimalist local deployment based on zebr0 key-value system.
+
+    positional arguments:
+      {show,run,log}
+        show                fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not
+        run                 fetches a script from the key-value server and executes its tasks in order
+        log                 prints a chronologically ordered list of the report files and their content
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -u <url>, --url <url>
+                            URL of the key-value server, defaults to https://hub.zebr0.io
+      -l [<level> [<level> ...]], --levels [<level> [<level> ...]]
+                            levels of specialization (e.g. "mattermost production" for a <project>/<environment>/<key> structure), defaults to ""
+      -c <duration>, --cache <duration>
+                            in seconds, the duration of the cache of http responses, defaults to 300 seconds
+      -f <path>, --configuration-file <path>
+                            path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
+      -r <path>, --reports-path <path>
+                            path to the reports' directory
+    """
+
+    argparser = zebr0.build_argument_parser(description="Minimalist local deployment based on zebr0 key-value system.")
+    argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="path to the reports' directory", metavar="<path>")
     subparsers = argparser.add_subparsers()
 
-    log_parser = subparsers.add_parser("log")
-    log_parser.set_defaults(command=log)
-
-    run_parser = subparsers.add_parser("run")
-    run_parser.add_argument("key", nargs="?", default="script", help="script identifier in the repository (default: script)")
-    run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help="")
-    run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help="")
-    run_parser.set_defaults(command=run)
-
-    show_parser = subparsers.add_parser("show")
-    show_parser.add_argument("key", nargs="?", default="script", help="script identifier in the repository (default: script)")
+    show_parser = subparsers.add_parser("show", description="Fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not.",
+                                        help="fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not")
+    show_parser.add_argument("key", nargs="?", default="script", help='key of the script to look for, defaults to "script"')
     show_parser.set_defaults(command=show)
 
-    args = argparser.parse_args(argv)
+    run_parser = subparsers.add_parser("run", description="Fetches a script from the key-value server and executes its tasks in order. On each success, a report file is created, which serves as an 'idempotence' marker not to run the task again. On failure, the whole loop stops.",
+                                       help="fetches a script from the key-value server and executes its tasks in order")
+    run_parser.add_argument("key", nargs="?", default="script", help='key of the script to look for, defaults to "script"')
+    run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help=f"maximum number of attempts before a task is actually considered a failure, defaults to {ATTEMPTS_DEFAULT}", metavar="<value>")
+    run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help=f"delay in seconds between two attempts, defaults to {PAUSE_DEFAULT}", metavar="<value>")
+    run_parser.set_defaults(command=run)
+
+    log_parser = subparsers.add_parser("log", description="Prints a chronologically ordered list of the report files and their content.",
+                                       help="prints a chronologically ordered list of the report files and their content")
+    log_parser.set_defaults(command=log)
+
+    args = argparser.parse_args(args)
     args.command(**vars(args))
