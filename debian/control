@@ -3,9 +3,9 @@ Section: admin
 Priority: optional
 Maintainer: Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>
 Build-Depends: debhelper (>=10)
-Standards-Version: 3.9.7
+Standards-Version: 4.5.0
 
 Package: zebr0-script
 Architecture: all
-Depends: ${misc:Depends}, python3, zebr0-core
-Description: Minimalist local provisioning
+Depends: ${misc:Depends}, python3, zebr0, python3-yaml
+Description: Minimalist local deployment based on zebr0 key-value system

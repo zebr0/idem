@@ -1,1 +1,2 @@
-src/zebr0-script /usr/bin
+zebr0_script/__init__.py /usr/lib/python3/dist-packages/zebr0_script
+zebr0-script /usr/bin
