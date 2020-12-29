@@ -1,3 +1,11 @@
+zebr0-script (0.7.0) focal; urgency=medium
+
+  * now uses the reworked version of zebr0
+  * rewritten into a library and a minimalist executable
+  * migrated the tests to pytest
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Tue, 29 Dec 2020 18:40:00 +0100
+
 zebr0-script (0.6.0-0ubuntu1) bionic; urgency=medium
 
   * on lookup, ensures the parent directories exist
