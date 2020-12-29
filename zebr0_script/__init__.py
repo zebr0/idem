@@ -2,6 +2,7 @@ import datetime
 import hashlib
 import json
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Tuple, Iterator, Any, Optional, List
@@ -174,17 +175,64 @@ def log(reports_path: Path, **_) -> None:
             print(file.name, strformat, file.read_text(encoding=zebr0.ENCODING).strip())
 
 
+def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
+    """
+    Fetches a script from the key-value server and executes its tasks one by one via user interaction.
+    Useful for debugging scripts in test environment.
+
+    :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
+    :param levels: (zebr0) levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
+    :param cache: (zebr0) in seconds, the duration of the cache of http responses, defaults to 300 seconds
+    :param configuration_file: (zebr0) path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
+    :param reports_path: Path to the reports' directory
+    :param key: key of the script to look for
+    """
+
+    reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
+
+    client = zebr0.Client(url, levels, cache, configuration_file)
+    for task, report_path in recursive_fetch_script(client, key, reports_path):
+        task_json = json.dumps(task)
+
+        if report_path.exists():
+            print("already executed:", task_json)
+            print("(s)kip, (e)xecute anyway, or (q)uit?")
+        else:
+            print("next:", task_json)
+            print("(e)xecute, (s)kip, or (q)uit?")
+
+        choice = sys.stdin.readline().strip()
+        if choice == "s":
+            continue
+        elif choice == "e":
+            if isinstance(task, str):
+                report = execute(task, 1)
+            else:
+                report = fetch_to_disk(client, **task)
+
+            if report:
+                print("write report? (y)es or (n)o")
+                choice = sys.stdin.readline().strip()
+                if choice == "y":
+                    report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
+            else:
+                print("error:", task_json)
+        else:
+            return
+
+
 def main(args: Optional[List[str]] = None) -> None:
     """
-    usage: [-h] [-u <url>] [-l [<level> [<level> ...]]] [-c <duration>] [-f <path>] [-r <path>] {show,run,log} ...
+    usage: [-h] [-u <url>] [-l [<level> [<level> ...]]] [-c <duration>] [-f <path>] [-r <path>] {show,run,log,debug} ...
 
     Minimalist local deployment based on zebr0 key-value system.
 
     positional arguments:
-      {show,run,log}
+      {show,run,log,debug}
         show                fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not
         run                 fetches a script from the key-value server and executes its tasks in order
         log                 prints a chronologically ordered list of the report files and their content
+        debug               fetches a script from the key-value server and executes its tasks one by one via user interaction
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -219,6 +267,11 @@ def main(args: Optional[List[str]] = None) -> None:
     log_parser = subparsers.add_parser("log", description="Prints a chronologically ordered list of the report files and their content.",
                                        help="prints a chronologically ordered list of the report files and their content")
     log_parser.set_defaults(command=log)
+
+    debug_parser = subparsers.add_parser("debug", description="Fetches a script from the key-value server and executes its tasks one by one via user interaction. Useful for debugging scripts in test environment.",
+                                         help="fetches a script from the key-value server and executes its tasks one by one via user interaction")
+    debug_parser.add_argument("key", nargs="?", default="script", help='key of the script to look for, defaults to "script"')
+    debug_parser.set_defaults(command=debug)
 
     args = argparser.parse_args(args)
     args.command(**vars(args))

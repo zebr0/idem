@@ -1,4 +1,5 @@
 import datetime
+import io
 
 import pytest
 import zebr0
@@ -16,7 +17,7 @@ def format_mtime(path):
     return datetime.datetime.fromtimestamp(path.stat().st_mtime).strftime("%c")
 
 
-def test_ok(server, tmp_path, capsys):
+def test_ok(server, tmp_path, capsys, monkeypatch):
     server.data = {"script": ["echo one", "sleep 1 && echo two"]}
 
     configuration_file = tmp_path.joinpath("zebr0.conf")
@@ -28,6 +29,10 @@ def test_ok(server, tmp_path, capsys):
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "show"])
     assert capsys.readouterr().out == 'todo: "echo one"\ntodo: "sleep 1 && echo two"\n'
+
+    monkeypatch.setattr("sys.stdin", io.StringIO("e\nn\nq\n"))
+    zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "debug"])
+    assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\none\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "run"])
     assert capsys.readouterr().out == 'executing: "echo one"\none\nsuccess: "echo one"\nexecuting: "sleep 1 && echo two"\ntwo\nsuccess: "sleep 1 && echo two"\n'

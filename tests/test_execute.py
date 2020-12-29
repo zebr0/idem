@@ -15,6 +15,16 @@ def test_ko(capsys):
     assert capsys.readouterr().out == "ko\nfailed, 2 attempts remaining, will try again in 0.1 seconds\nko\nfailed, 1 attempts remaining, will try again in 0.1 seconds\nko\n"
 
 
+def test_0_attempt(capsys):
+    assert zebr0_script.execute("echo ko && false", attempts=0, pause=0.1) is None
+    assert capsys.readouterr().out == ""
+
+
+def test_1_attempt(capsys):
+    assert zebr0_script.execute("echo ko && false", attempts=1, pause=0.1) is None
+    assert capsys.readouterr().out == "ko\n"
+
+
 def test_stdout(capsys):
     def execute():
         zebr0_script.execute("echo begin && sleep 1 && echo end")
