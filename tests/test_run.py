@@ -4,7 +4,7 @@ import zebr0_script
 
 REPORT1_CONTENT = """{
   "command": "test",
-  "stdout": [
+  "output": [
     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
     "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
@@ -23,7 +23,7 @@ def test_ok(tmp_path, monkeypatch, capsys):
         yield {"key": "yin", "target": "yang"}, report2
 
     def mock_execute(command, *_):
-        return {"command": command, "stdout": ["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+        return {"command": command, "output": ["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
                                                "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
                                                "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
                                                "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."]}
@@ -56,7 +56,7 @@ def test_ko(tmp_path, monkeypatch, capsys):
 
     def mock_execute(command, *_):
         if command == "one":
-            return {"command": command, "stdout": []}
+            return {"command": command, "output": []}
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "execute", mock_execute)

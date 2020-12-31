@@ -37,7 +37,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
         yield "test", report
 
     def mock_execute(command, *_):
-        return {"command": command, "stdout": []}
+        return {"command": command, "output": []}
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "execute", mock_execute)
@@ -45,7 +45,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
 
     zebr0_script.debug("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
     assert capsys.readouterr().out == 'next: "test"\n(e)xecute, (s)kip, or (q)uit?\nwrite report? (y)es or (n)o\n'
-    assert report.read_text(encoding=zebr0.ENCODING) == '{\n  "command": "test",\n  "stdout": []\n}'
+    assert report.read_text(encoding=zebr0.ENCODING) == '{\n  "command": "test",\n  "output": []\n}'
 
 
 def test_execute_ko(tmp_path, monkeypatch, capsys):

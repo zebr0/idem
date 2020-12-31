@@ -32,16 +32,16 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
 
     monkeypatch.setattr("sys.stdin", io.StringIO("e\nn\nq\n"))
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "debug"])
-    assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\none\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
+    assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\n.\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "run"])
-    assert capsys.readouterr().out == 'executing: "echo one"\none\nsuccess: "echo one"\nexecuting: "sleep 1 && echo two"\ntwo\nsuccess: "sleep 1 && echo two"\n'
+    assert capsys.readouterr().out == 'executing: "echo one"\n.\nsuccess: "echo one"\nexecuting: "sleep 1 && echo two"\n.\nsuccess: "sleep 1 && echo two"\n'
 
     report1_date = format_mtime(reports_path.joinpath("a885d7b3306acd60490834d5fdd234b5"))
     report2_date = format_mtime(reports_path.joinpath("7ab9b46af97310796a1918713345d986"))
 
     zebr0_script.main(["-r", str(reports_path), "log"])
-    assert capsys.readouterr().out == "a885d7b3306acd60490834d5fdd234b5 " + report1_date + ' {\n  "command": "echo one",\n  "stdout": [\n    "one"\n  ]\n}\n7ab9b46af97310796a1918713345d986 ' + report2_date + ' {\n  "command": "sleep 1 && echo two",\n  "stdout": [\n    "two"\n  ]\n}\n'
+    assert capsys.readouterr().out == "a885d7b3306acd60490834d5fdd234b5 " + report1_date + ' {\n  "command": "echo one",\n  "output": [\n    "one"\n  ]\n}\n7ab9b46af97310796a1918713345d986 ' + report2_date + ' {\n  "command": "sleep 1 && echo two",\n  "output": [\n    "two"\n  ]\n}\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "show"])
     assert capsys.readouterr().out == 'done: "echo one"\ndone: "sleep 1 && echo two"\n'

@@ -70,8 +70,7 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     """
     Executes a command with the system's shell.
     Several attempts will be made in case of failure, to cover for e.g. network issues.
-    Standard output will be shown and returned as a list of strings if successful.
-    Beware that dynamic output like the use of carriage return in progress bars won't be rendered properly.
+    Progress is shown with dots, and standard output will be returned as a list of strings if successful.
 
     :param command: command to execute
     :param attempts: maximum number of attempts before being actually considered a failure
@@ -80,16 +79,18 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     """
 
     for attempt in reversed(range(attempts)):  # [attempts-1 .. 0]
-        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, universal_newlines=True, encoding=zebr0.ENCODING)
+        sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding=zebr0.ENCODING)
 
-        stdout = []
+        output = []
         for line in sp.stdout:
-            line = line.strip()
-            print(line)
-            stdout.append(line)
+            print(".", end="")  # progress bar: each line in stdout prints a dot
+            output.append(line.rstrip())
+
+        if output:
+            print()  # if at least one dot has been printed, we need a new line
 
         if sp.wait() == 0:  # if successful (i.e. the return code is 0)
-            return {"command": command, "stdout": stdout}
+            return {"command": command, "output": output}
         elif attempt != 0:
             print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
