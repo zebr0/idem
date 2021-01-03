@@ -8,8 +8,8 @@ import zebr0_script
 
 def test_quit(tmp_path, monkeypatch, capsys):
     def mock_recursive_fetch_script(*_):
-        yield "one", tmp_path.joinpath("one")
-        yield "two", tmp_path.joinpath("two")
+        yield "one", zebr0_script.Status.PENDING, tmp_path.joinpath("one")
+        yield "two", zebr0_script.Status.PENDING, tmp_path.joinpath("two")
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr("sys.stdin", io.StringIO("q\n"))
@@ -20,8 +20,8 @@ def test_quit(tmp_path, monkeypatch, capsys):
 
 def test_skip(tmp_path, monkeypatch, capsys):
     def mock_recursive_fetch_script(*_):
-        yield "one", tmp_path.joinpath("one")
-        yield "two", tmp_path.joinpath("two")
+        yield "one", zebr0_script.Status.PENDING, tmp_path.joinpath("one")
+        yield "two", zebr0_script.Status.PENDING, tmp_path.joinpath("two")
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr("sys.stdin", io.StringIO("s\ns\n"))
@@ -34,7 +34,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
     report = tmp_path.joinpath("report")
 
     def mock_recursive_fetch_script(*_):
-        yield "test", report
+        yield "test", zebr0_script.Status.PENDING, report
 
     def mock_execute(command, *_):
         return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": []}
@@ -53,8 +53,8 @@ def test_execute_ko(tmp_path, monkeypatch, capsys):
     report2 = tmp_path.joinpath("report2")
 
     def mock_recursive_fetch_script(*_):
-        yield {"key": "yin", "target": "yang"}, report1
-        yield "two", report2
+        yield {"key": "yin", "target": "yang"}, zebr0_script.Status.PENDING, report1
+        yield "two", zebr0_script.Status.PENDING, report2
 
     def mock_fetch_to_disk(_, key, target):
         return {"key": key, "target": target, "status": zebr0_script.Status.FAILURE, "output": ["error"]}

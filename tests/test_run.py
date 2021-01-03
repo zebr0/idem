@@ -20,8 +20,8 @@ def test_ok(tmp_path, monkeypatch, capsys):
     report2 = reports_path.joinpath("report2")
 
     def mock_recursive_fetch_script(*_):
-        yield "test", report1
-        yield {"key": "yin", "target": "yang"}, report2
+        yield "test", zebr0_script.Status.PENDING, report1
+        yield {"key": "yin", "target": "yang"}, zebr0_script.Status.PENDING, report2
 
     def mock_execute(command, *_):
         return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": ["Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
@@ -51,9 +51,9 @@ def test_ko(tmp_path, monkeypatch, capsys):
     report3 = tmp_path.joinpath("report3")
 
     def mock_recursive_fetch_script(*_):
-        yield "one", report1
-        yield {"key": "yin", "target": "yang"}, report2
-        yield "two", report3
+        yield "one", zebr0_script.Status.PENDING, report1
+        yield {"key": "yin", "target": "yang"}, zebr0_script.Status.PENDING, report2
+        yield "two", zebr0_script.Status.PENDING, report3
 
     def mock_execute(command, *_):
         return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": []}

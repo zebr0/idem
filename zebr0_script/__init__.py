@@ -28,7 +28,7 @@ class Status(str, enum.Enum):
     FAILURE = "failure"
 
 
-def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Path]]:
+def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Status, Path]]:
     """
     Fetches a script from the key-value server, validates the tasks' structure and fetches the "include" tasks recursively.
 
@@ -38,7 +38,7 @@ def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -
     :param client: zebr0 Client instance to the key-value server
     :param key: key of the script to look for
     :param reports_path: Path to the reports' directory
-    :return: the script's valid tasks and the corresponding report Paths
+    :return: the script's valid tasks, their Status and the corresponding report Paths
     """
 
     value = client.get(key)
@@ -54,7 +54,9 @@ def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -
                     yield from recursive_fetch_script(client, task.get(INCLUDE), reports_path)
                 elif isinstance(task, str) or isinstance(task, dict) and task.keys() == {KEY, TARGET}:
                     md5 = hashlib.md5(json.dumps(task).encode(zebr0.ENCODING)).hexdigest()
-                    yield task, reports_path.joinpath(md5)
+                    report_path = reports_path.joinpath(md5)
+                    status = json.loads(report_path.read_text(encoding=zebr0.ENCODING)).get(STATUS) if report_path.exists() else Status.PENDING
+                    yield task, status, report_path
                 else:
                     print("malformed task, ignored:", json.dumps(task))
 
@@ -72,7 +74,7 @@ def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: 
     """
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, report_path in recursive_fetch_script(client, key, reports_path):
+    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
         print("todo:" if not report_path.exists() else "done:", json.dumps(task))
 
 
@@ -162,7 +164,7 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
     reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, report_path in recursive_fetch_script(client, key, reports_path):
+    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
         task_json = json.dumps(task)
 
         if report_path.exists():
@@ -215,7 +217,7 @@ def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file:
     reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, report_path in recursive_fetch_script(client, key, reports_path):
+    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
         task_json = json.dumps(task)
 
         if report_path.exists():

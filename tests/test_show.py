@@ -8,8 +8,8 @@ def test_ok(tmp_path, monkeypatch, capsys):
     report2 = tmp_path.joinpath("report2")
 
     def mock_recursive_fetch_script(*_):
-        yield "one", report1
-        yield "two", report2
+        yield "one", zebr0_script.Status.PENDING, report1
+        yield "two", zebr0_script.Status.PENDING, report2
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
 
