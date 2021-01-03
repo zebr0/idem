@@ -28,7 +28,7 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
     assert capsys.readouterr().out == ""
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "show"])
-    assert capsys.readouterr().out == 'todo: "echo one"\ntodo: "sleep 1 && echo two"\n'
+    assert capsys.readouterr().out == 'pending: "echo one"\npending: "sleep 1 && echo two"\n'
 
     monkeypatch.setattr("sys.stdin", io.StringIO("e\nn\nq\n"))
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "debug"])
@@ -44,7 +44,7 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
     assert capsys.readouterr().out == "a885d7b3306acd60490834d5fdd234b5 " + report1_date + ' {\n  "command": "echo one",\n  "status": "success",\n  "output": [\n    "one"\n  ]\n}\n7ab9b46af97310796a1918713345d986 ' + report2_date + ' {\n  "command": "sleep 1 && echo two",\n  "status": "success",\n  "output": [\n    "two"\n  ]\n}\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "show"])
-    assert capsys.readouterr().out == 'done: "echo one"\ndone: "sleep 1 && echo two"\n'
+    assert capsys.readouterr().out == 'success: "echo one"\nsuccess: "sleep 1 && echo two"\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "run"])
     assert capsys.readouterr().out == 'skipping: "echo one"\nskipping: "sleep 1 && echo two"\n'

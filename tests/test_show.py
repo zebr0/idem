@@ -3,23 +3,32 @@ from pathlib import Path
 import zebr0_script
 
 
-def test_ok(tmp_path, monkeypatch, capsys):
-    report1 = tmp_path.joinpath("report1")
-    report2 = tmp_path.joinpath("report2")
-
+def test_multiple_pending(tmp_path, monkeypatch, capsys):
     def mock_recursive_fetch_script(*_):
-        yield "one", zebr0_script.Status.PENDING, report1
-        yield "two", zebr0_script.Status.PENDING, report2
+        yield "one", zebr0_script.Status.PENDING, tmp_path.joinpath("report1")
+        yield "two", zebr0_script.Status.PENDING, tmp_path.joinpath("report2")
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
 
     zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'todo: "one"\ntodo: "two"\n'
+    assert capsys.readouterr().out == 'pending: "one"\npending: "two"\n'
 
-    report1.touch()
-    zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'done: "one"\ntodo: "two"\n'
 
-    report2.touch()
+def test_success(tmp_path, monkeypatch, capsys):
+    def mock_recursive_fetch_script(*_):
+        yield "command", zebr0_script.Status.SUCCESS, tmp_path.joinpath("report")
+
+    monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
+
     zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'done: "one"\ndone: "two"\n'
+    assert capsys.readouterr().out == 'success: "command"\n'
+
+
+def test_failure(tmp_path, monkeypatch, capsys):
+    def mock_recursive_fetch_script(*_):
+        yield "command", zebr0_script.Status.FAILURE, tmp_path.joinpath("report")
+
+    monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
+
+    zebr0_script.show("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
+    assert capsys.readouterr().out == 'failure: "command"\n'

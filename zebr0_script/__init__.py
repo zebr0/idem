@@ -74,8 +74,8 @@ def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: 
     """
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
-        print("todo:" if not report_path.exists() else "done:", json.dumps(task))
+    for task, status, _ in recursive_fetch_script(client, key, reports_path):
+        print(f"{status}: {json.dumps(task)}")
 
 
 def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> dict:
