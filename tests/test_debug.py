@@ -37,7 +37,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
         yield "test", report
 
     def mock_execute(command, *_):
-        return {"command": command, "output": []}
+        return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": []}
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "execute", mock_execute)
@@ -45,7 +45,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
 
     zebr0_script.debug("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
     assert capsys.readouterr().out == 'next: "test"\n(e)xecute, (s)kip, or (q)uit?\nwrite report? (y)es or (n)o\n'
-    assert report.read_text(encoding=zebr0.ENCODING) == '{\n  "command": "test",\n  "output": []\n}'
+    assert report.read_text(encoding=zebr0.ENCODING) == '{\n  "command": "test",\n  "status": "success",\n  "output": []\n}'
 
 
 def test_execute_ko(tmp_path, monkeypatch, capsys):
@@ -56,8 +56,8 @@ def test_execute_ko(tmp_path, monkeypatch, capsys):
         yield {"key": "yin", "target": "yang"}, report1
         yield "two", report2
 
-    def mock_fetch_to_disk(*_, **__):
-        pass
+    def mock_fetch_to_disk(_, key, target):
+        return {"key": key, "target": target, "status": zebr0_script.Status.FAILURE, "output": ["error"]}
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "fetch_to_disk", mock_fetch_to_disk)

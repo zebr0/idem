@@ -1,4 +1,5 @@
 import datetime
+import enum
 import hashlib
 import json
 import subprocess
@@ -16,6 +17,15 @@ PAUSE_DEFAULT = 10
 INCLUDE = "include"
 KEY = "key"
 TARGET = "target"
+COMMAND = "command"
+STATUS = "status"
+OUTPUT = "output"
+
+
+class Status(str, enum.Enum):
+    PENDING = "pending"
+    SUCCESS = "success"
+    FAILURE = "failure"
 
 
 def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Path]]:
@@ -70,16 +80,17 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
     """
     Executes a command with the system's shell.
     Several attempts will be made in case of failure, to cover for e.g. network issues.
-    Progress is shown with dots, and standard output will be returned as a list of strings if successful.
+    Progress is shown with dots, and standard output will be returned as a list of strings as part of the execution report.
 
     :param command: command to execute
     :param attempts: maximum number of attempts before being actually considered a failure
     :param pause: delay in seconds between two attempts
-    :return: if successful, an execution report as a dictionary
+    :return: an execution report as a dictionary
     """
 
-    for attempt in reversed(range(attempts)):  # [attempts-1 .. 0]
+    while True:
         sp = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding=zebr0.ENCODING)
+        attempts = attempts - 1
 
         output = []
         for line in sp.stdout:
@@ -90,34 +101,46 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
             print()  # if at least one dot has been printed, we need a new line
 
         if sp.wait() == 0:  # if successful (i.e. the return code is 0)
-            return {"command": command, "output": output}
-        elif attempt != 0:
-            print(f"failed, {attempt} attempts remaining, will try again in {pause} seconds")
+            status = Status.SUCCESS
+            break
+        elif attempts > 0:
+            print(f"failed, {attempts} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
+        else:
+            status = Status.FAILURE
+            break
+
+    return {COMMAND: command, STATUS: status, OUTPUT: output}
 
 
 def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
     """
     Fetches a key from the key-value server and writes its value into a target file.
+    Errors will be returned as a list of strings as part of the execution report.
 
     :param client: zebr0 Client instance to the key-value server
     :param key: key to look for
     :param target: path to the target file
-    :return: if successful, an execution report as a dictionary
+    :return: an execution report as a dictionary
     """
 
     value = client.get(key, strip=False)
     if not value:
-        print(f"key '{key}' not found on server {client.url}")
+        status = Status.FAILURE
+        output = [f"key '{key}' not found on server {client.url}"]
     else:
         try:
             target_path = Path(target)
             target_path.parent.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
             target_path.write_text(value, encoding=zebr0.ENCODING)
 
-            return {KEY: key, TARGET: target}
+            status = Status.SUCCESS
+            output = []
         except OSError as error:
-            print(error)
+            status = Status.FAILURE
+            output = str(error).splitlines()
+
+    return {KEY: key, TARGET: target, STATUS: status, OUTPUT: output}
 
 
 def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT, **_) -> None:
@@ -152,7 +175,7 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
             else:
                 report = fetch_to_disk(client, **task)
 
-            if report:
+            if report.get(STATUS) == Status.SUCCESS:
                 print("success:", task_json)
                 report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
             else:
@@ -211,7 +234,7 @@ def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file:
             else:
                 report = fetch_to_disk(client, **task)
 
-            if report:
+            if report.get(STATUS) == Status.SUCCESS:
                 print("write report? (y)es or (n)o")
                 choice = sys.stdin.readline().strip()
                 if choice == "y":
