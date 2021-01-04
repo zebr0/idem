@@ -148,7 +148,8 @@ def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
 def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT, **_) -> None:
     """
     Fetches a script from the key-value server and executes its tasks in order.
-    On each success, a report file is created, which serves as an "idempotence" marker not to run the task again.
+    A report file is then created for each task.
+    On success, it serves as an "idempotence" marker not to run the task again.
     On failure, the whole loop stops.
 
     :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
@@ -164,10 +165,10 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
     reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
+    for task, status, report_path in recursive_fetch_script(client, key, reports_path):
         task_json = json.dumps(task)
 
-        if report_path.exists():
+        if status == Status.SUCCESS:
             print("skipping:", task_json)
         else:
             print("executing:", task_json)

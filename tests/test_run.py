@@ -41,8 +41,18 @@ def test_ok(tmp_path, monkeypatch, capsys):
     assert report1.read_text() == REPORT1_CONTENT
     assert report2.read_text() == '{\n  "key": "yin",\n  "target": "yang",\n  "status": "success",\n  "output": []\n}'
 
-    zebr0_script.run("http://localhost:8001", [], 1, Path(""), reports_path, "script")
-    assert capsys.readouterr().out == 'skipping: "test"\nskipping: {"key": "yin", "target": "yang"}\n'
+
+def test_skipping(tmp_path, monkeypatch, capsys):
+    report = tmp_path.joinpath("report")
+
+    def mock_recursive_fetch_script(*_):
+        yield "test", zebr0_script.Status.SUCCESS, report
+
+    monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
+
+    zebr0_script.run("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
+    assert capsys.readouterr().out == 'skipping: "test"\n'
+    assert not report.exists()
 
 
 def test_ko(tmp_path, monkeypatch, capsys):
@@ -71,8 +81,19 @@ def test_ko(tmp_path, monkeypatch, capsys):
     assert not report2.exists()
     assert not report3.exists()
 
+
+def test_redo(tmp_path, monkeypatch, capsys):
+    report = tmp_path.joinpath("report")
+
+    def mock_recursive_fetch_script(*_):
+        yield "test", zebr0_script.Status.FAILURE, report
+
+    def mock_execute(command, *_):
+        return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": []}
+
+    monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
+    monkeypatch.setattr(zebr0_script, "execute", mock_execute)
+
     zebr0_script.run("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'skipping: "one"\nexecuting: {"key": "yin", "target": "yang"}\nerror: {"key": "yin", "target": "yang"}\n'
-    assert report1.exists()
-    assert not report2.exists()
-    assert not report3.exists()
+    assert capsys.readouterr().out == 'executing: "test"\nsuccess: "test"\n'
+    assert report.exists()
