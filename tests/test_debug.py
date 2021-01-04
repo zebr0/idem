@@ -67,3 +67,14 @@ def test_execute_ko(tmp_path, monkeypatch, capsys):
     assert capsys.readouterr().out == 'next: {"key": "yin", "target": "yang"}\n(e)xecute, (s)kip, or (q)uit?\nerror: {"key": "yin", "target": "yang"}\nnext: "two"\n(e)xecute, (s)kip, or (q)uit?\n'
     assert not report1.exists()
     assert not report2.exists()
+
+
+def test_already_executed(tmp_path, monkeypatch, capsys):
+    def mock_recursive_fetch_script(*_):
+        yield {"key": "yin", "target": "yang"}, zebr0_script.Status.SUCCESS, tmp_path.joinpath("report")
+
+    monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
+    monkeypatch.setattr("sys.stdin", io.StringIO("s\n"))
+
+    zebr0_script.debug("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
+    assert capsys.readouterr().out == 'already executed: {"key": "yin", "target": "yang"}\n(s)kip, (e)xecute anyway, or (q)uit?\n'

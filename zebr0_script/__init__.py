@@ -218,10 +218,10 @@ def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file:
     reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
 
     client = zebr0.Client(url, levels, cache, configuration_file)
-    for task, _, report_path in recursive_fetch_script(client, key, reports_path):
+    for task, status, report_path in recursive_fetch_script(client, key, reports_path):
         task_json = json.dumps(task)
 
-        if report_path.exists():
+        if status == Status.SUCCESS:
             print("already executed:", task_json)
             print("(s)kip, (e)xecute anyway, or (q)uit?")
         else:
