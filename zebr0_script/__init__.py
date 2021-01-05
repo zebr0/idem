@@ -98,9 +98,8 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
         for line in sp.stdout:
             print(".", end="")  # progress bar: each line in stdout prints a dot
             output.append(line.rstrip())
-
         if output:
-            print()  # if at least one dot has been printed, we need a new line
+            print()  # if at least one dot has been printed, we need a new line at the end
 
         if sp.wait() == 0:  # if successful (i.e. the return code is 0)
             status = Status.SUCCESS
@@ -178,10 +177,12 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
             else:
                 report = fetch_to_disk(client, **task)
 
+            report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
             if report.get(STATUS) == Status.SUCCESS:
                 print("success:", task_json)
-                report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
             else:
+                for line in report.get(OUTPUT):
+                    print(line)
                 print("error:", task_json)
                 break
 

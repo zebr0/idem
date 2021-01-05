@@ -69,16 +69,16 @@ def test_ko(tmp_path, monkeypatch, capsys):
         return {"command": command, "status": zebr0_script.Status.SUCCESS, "output": []}
 
     def mock_fetch_to_disk(_, key, target):
-        return {"key": key, "target": target, "status": zebr0_script.Status.FAILURE, "output": ["error"]}
+        return {"key": key, "target": target, "status": zebr0_script.Status.FAILURE, "output": ["multiline", "error", "output"]}
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "execute", mock_execute)
     monkeypatch.setattr(zebr0_script, "fetch_to_disk", mock_fetch_to_disk)
 
     zebr0_script.run("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'executing: "one"\nsuccess: "one"\nexecuting: {"key": "yin", "target": "yang"}\nerror: {"key": "yin", "target": "yang"}\n'
+    assert capsys.readouterr().out == 'executing: "one"\nsuccess: "one"\nexecuting: {"key": "yin", "target": "yang"}\nmultiline\nerror\noutput\nerror: {"key": "yin", "target": "yang"}\n'
     assert report1.exists()
-    assert not report2.exists()
+    assert report2.exists()
     assert not report3.exists()
 
 
