@@ -65,14 +65,14 @@ def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -
 
 def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
     """
-    Fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not.
+    Fetches a script from the key-value server and displays its tasks along with their current status.
 
     :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
     :param levels: (zebr0) levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
     :param cache: (zebr0) in seconds, the duration of the cache of http responses, defaults to 300 seconds
     :param configuration_file: (zebr0) path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
     :param reports_path: Path to the reports' directory
-    :param key: key of the script to look for
+    :param key: the script's key
     """
 
     client = zebr0.Client(url, levels, cache, configuration_file)
@@ -263,7 +263,7 @@ def main(args: Optional[List[str]] = None) -> None:
 
     positional arguments:
       {show,run,log,debug}
-        show                fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not
+        show                fetches a script from the key-value server and displays its tasks along with their current status
         run                 fetches a script from the key-value server and executes its tasks in order
         log                 prints a chronologically ordered list of the report files and their content
         debug               fetches a script from the key-value server and executes its tasks one by one via user interaction
@@ -286,9 +286,9 @@ def main(args: Optional[List[str]] = None) -> None:
     argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="path to the reports' directory", metavar="<path>")
     subparsers = argparser.add_subparsers()
 
-    show_parser = subparsers.add_parser("show", description="Fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not.",
-                                        help="fetches a script from the key-value server and displays its tasks along with their current status, whether they have already been executed or not")
-    show_parser.add_argument("key", nargs="?", default="script", help='key of the script to look for, defaults to "script"')
+    show_parser = subparsers.add_parser("show", description="Fetches a script from the key-value server and displays its tasks along with their current status.",
+                                        help="fetches a script from the key-value server and displays its tasks along with their current status")
+    show_parser.add_argument("key", nargs="?", default="script", help="the script's key, defaults to 'script'")
     show_parser.set_defaults(command=show)
 
     run_parser = subparsers.add_parser("run", description="Fetches a script from the key-value server and executes its tasks in order. On each success, a report file is created, which serves as an 'idempotence' marker not to run the task again. On failure, the whole loop stops.",
