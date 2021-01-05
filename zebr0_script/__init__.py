@@ -30,35 +30,37 @@ class Status(str, enum.Enum):
 
 def recursive_fetch_script(client: zebr0.Client, key: str, reports_path: Path) -> Iterator[Tuple[Any, Status, Path]]:
     """
-    Fetches a script from the key-value server, validates the tasks' structure and fetches the "include" tasks recursively.
+    Fetches a script from the key-value server and yields its tasks, their Status and report Path.
+    Included scripts are fetched recursively.
+    Malformed tasks are ignored.
 
-    Beware that malformed tasks are ignored.
-    Also, "key not found" and "key is not a proper yaml or json list" errors are non-blocking in "include" tasks.
-
-    :param client: zebr0 Client instance to the key-value server
-    :param key: key of the script to look for
+    :param client: zebr0 Client to the key-value server
+    :param key: the script's key
     :param reports_path: Path to the reports' directory
-    :return: the script's valid tasks, their Status and the corresponding report Paths
+    :return: the script's tasks, their Status and report Path
     """
 
     value = client.get(key)
     if not value:
         print(f"key '{key}' not found on server {client.url}")
-    else:
-        tasks = yaml.load(value, Loader=yaml.BaseLoader)
-        if not isinstance(tasks, list):
-            print(f"key '{key}' on server {client.url} is not a proper yaml or json list")
+        return
+
+    tasks = yaml.load(value, Loader=yaml.BaseLoader)
+    if not isinstance(tasks, list):
+        print(f"key '{key}' on server {client.url} is not a proper yaml or json list")
+        return
+
+    for task in tasks:
+        if isinstance(task, dict) and task.keys() == {INCLUDE}:
+            yield from recursive_fetch_script(client, task.get(INCLUDE), reports_path)
+        elif isinstance(task, str) or isinstance(task, dict) and task.keys() == {KEY, TARGET}:
+            md5 = hashlib.md5(json.dumps(task).encode(zebr0.ENCODING)).hexdigest()
+            report_path = reports_path.joinpath(md5)
+            status = Status.PENDING if not report_path.exists() else json.loads(report_path.read_text(encoding=zebr0.ENCODING)).get(STATUS)
+
+            yield task, status, report_path
         else:
-            for task in tasks:
-                if isinstance(task, dict) and task.keys() == {INCLUDE}:
-                    yield from recursive_fetch_script(client, task.get(INCLUDE), reports_path)
-                elif isinstance(task, str) or isinstance(task, dict) and task.keys() == {KEY, TARGET}:
-                    md5 = hashlib.md5(json.dumps(task).encode(zebr0.ENCODING)).hexdigest()
-                    report_path = reports_path.joinpath(md5)
-                    status = json.loads(report_path.read_text(encoding=zebr0.ENCODING)).get(STATUS) if report_path.exists() else Status.PENDING
-                    yield task, status, report_path
-                else:
-                    print("malformed task, ignored:", json.dumps(task))
+            print("malformed task, ignored:", json.dumps(task))
 
 
 def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
