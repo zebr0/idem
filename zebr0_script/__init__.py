@@ -83,13 +83,13 @@ def show(url: str, levels: Optional[List[str]], cache: int, configuration_file: 
 def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT) -> dict:
     """
     Executes a command with the system's shell.
-    Several attempts will be made in case of failure, to cover for e.g. network issues.
-    Progress is shown with dots, and standard output will be returned as a list of strings as part of the execution report.
+    Several attempts will be made in case of failure, to cover for temporary mishaps such as network issues.
+    Progress is shown with dots, and standard output will be returned as a list of strings in an execution report.
 
     :param command: command to execute
-    :param attempts: maximum number of attempts before being actually considered a failure
+    :param attempts: maximum number of attempts before reporting a failure
     :param pause: delay in seconds between two attempts
-    :return: an execution report as a dictionary
+    :return: an execution report
     """
 
     while True:
@@ -107,13 +107,13 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
             status = Status.SUCCESS
             break
         elif attempts > 0:
-            print(f"failed, {attempts} attempts remaining, will try again in {pause} seconds")
+            print(f"error, {attempts} attempts remaining, will try again in {pause} seconds")
             time.sleep(pause)
         else:
             status = Status.FAILURE
             break
 
-    return {COMMAND: command, STATUS: status, OUTPUT: output}
+    return {COMMAND: command, STATUS: status, OUTPUT: output}  # last known output
 
 
 def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
