@@ -32,7 +32,7 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
 
     monkeypatch.setattr("sys.stdin", io.StringIO("e\nn\nq\n"))
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "debug"])
-    assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\n.\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
+    assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\n.\nsuccess: "echo one"\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "run"])
     assert capsys.readouterr().out == 'executing: "echo one"\n.\nsuccess: "echo one"\nexecuting: "sleep 1 && echo two"\n.\nsuccess: "sleep 1 && echo two"\n'

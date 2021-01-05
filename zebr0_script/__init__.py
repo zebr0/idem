@@ -239,12 +239,16 @@ def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file:
                 report = fetch_to_disk(client, **task)
 
             if report.get(STATUS) == Status.SUCCESS:
-                print("write report? (y)es or (n)o")
-                choice = sys.stdin.readline().strip()
-                if choice == "y":
-                    report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
+                print("success:", task_json)
             else:
+                for line in report.get(OUTPUT):
+                    print(line)
                 print("error:", task_json)
+
+            print("write report? (y)es or (n)o")
+            choice = sys.stdin.readline().strip()
+            if choice == "y":
+                report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
         else:
             return
 

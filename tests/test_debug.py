@@ -44,7 +44,7 @@ def test_execute_ok(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO("e\ny\n"))
 
     zebr0_script.debug("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'next: "test"\n(e)xecute, (s)kip, or (q)uit?\nwrite report? (y)es or (n)o\n'
+    assert capsys.readouterr().out == 'next: "test"\n(e)xecute, (s)kip, or (q)uit?\nsuccess: "test"\nwrite report? (y)es or (n)o\n'
     assert report.read_text(encoding=zebr0.ENCODING) == '{\n  "command": "test",\n  "status": "success",\n  "output": []\n}'
 
 
@@ -61,11 +61,11 @@ def test_execute_ko(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(zebr0_script, "recursive_fetch_script", mock_recursive_fetch_script)
     monkeypatch.setattr(zebr0_script, "fetch_to_disk", mock_fetch_to_disk)
-    monkeypatch.setattr("sys.stdin", io.StringIO("e\nq\n"))
+    monkeypatch.setattr("sys.stdin", io.StringIO("e\ny\nq\n"))
 
     zebr0_script.debug("http://localhost:8001", [], 1, Path(""), tmp_path, "script")
-    assert capsys.readouterr().out == 'next: {"key": "yin", "target": "yang"}\n(e)xecute, (s)kip, or (q)uit?\nerror: {"key": "yin", "target": "yang"}\nnext: "two"\n(e)xecute, (s)kip, or (q)uit?\n'
-    assert not report1.exists()
+    assert capsys.readouterr().out == 'next: {"key": "yin", "target": "yang"}\n(e)xecute, (s)kip, or (q)uit?\nerror\nerror: {"key": "yin", "target": "yang"}\nwrite report? (y)es or (n)o\nnext: "two"\n(e)xecute, (s)kip, or (q)uit?\n'
+    assert report1.exists()
     assert not report2.exists()
 
 
