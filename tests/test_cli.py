@@ -35,7 +35,7 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
     assert capsys.readouterr().out == 'next: "echo one"\n(e)xecute, (s)kip, or (q)uit?\n.\nsuccess: "echo one"\nwrite report? (y)es or (n)o\nnext: "sleep 1 && echo two"\n(e)xecute, (s)kip, or (q)uit?\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "run"])
-    assert capsys.readouterr().out == 'executing: "echo one"\n.\nsuccess: "echo one"\nexecuting: "sleep 1 && echo two"\n.\nsuccess: "sleep 1 && echo two"\n'
+    assert capsys.readouterr().out == 'executing: "echo one"\n.\nsuccess!\nexecuting: "sleep 1 && echo two"\n.\nsuccess!\n'
 
     report1_date = format_mtime(reports_path.joinpath("a885d7b3306acd60490834d5fdd234b5"))
     report2_date = format_mtime(reports_path.joinpath("7ab9b46af97310796a1918713345d986"))

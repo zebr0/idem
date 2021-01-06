@@ -148,45 +148,39 @@ def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
 
 def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE_DEFAULT, **_) -> None:
     """
-    Fetches a script from the key-value server and executes its tasks in order.
-    A report file is then created for each task.
-    On success, it serves as an "idempotence" marker not to run the task again.
-    On failure, the whole loop stops.
+    Fetches a script from the key-value server and executes its tasks.
+    Execution reports are written after each task.
+    On failure, the output is displayed and the loop stops.
+    Should you run the script again, successful tasks will be skipped.
 
     :param url: (zebr0) URL of the key-value server, defaults to https://hub.zebr0.io
     :param levels: (zebr0) levels of specialization (e.g. ["mattermost", "production"] for a <project>/<environment>/<key> structure), defaults to []
     :param cache: (zebr0) in seconds, the duration of the cache of http responses, defaults to 300 seconds
     :param configuration_file: (zebr0) path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
     :param reports_path: Path to the reports' directory
-    :param key: key of the script to look for
-    :param attempts: maximum number of attempts before a task is actually considered a failure
+    :param key: the script's key
+    :param attempts: maximum number of attempts before reporting a failure
     :param pause: delay in seconds between two attempts
     """
 
-    reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
+    reports_path.mkdir(parents=True, exist_ok=True)  # make sure the parent directory exists
 
     client = zebr0.Client(url, levels, cache, configuration_file)
     for task, status, report_path in recursive_fetch_script(client, key, reports_path):
-        task_json = json.dumps(task)
-
         if status == Status.SUCCESS:
-            print("skipping:", task_json)
-        else:
-            print("executing:", task_json)
+            print("skipping:", json.dumps(task))
+            continue
 
-            if isinstance(task, str):
-                report = execute(task, attempts, pause)
-            else:
-                report = fetch_to_disk(client, **task)
+        print("executing:", json.dumps(task))
+        report = execute(task, attempts, pause) if isinstance(task, str) else fetch_to_disk(client, **task)
+        report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
 
-            report_path.write_text(json.dumps(report, indent=2), encoding=zebr0.ENCODING)
-            if report.get(STATUS) == Status.SUCCESS:
-                print("success:", task_json)
-            else:
-                for line in report.get(OUTPUT):
-                    print(line)
-                print("error:", task_json)
-                break
+        if report.get(STATUS) == Status.SUCCESS:
+            print("success!")
+            continue
+
+        print("error:", json.dumps(report.get(OUTPUT), indent=2))
+        break
 
 
 def log(reports_path: Path, **_) -> None:
@@ -264,7 +258,7 @@ def main(args: Optional[List[str]] = None) -> None:
     positional arguments:
       {show,run,log,debug}
         show                fetches a script from the key-value server and displays its tasks along with their current status
-        run                 fetches a script from the key-value server and executes its tasks in order
+        run                 fetches a script from the key-value server and executes its tasks
         log                 prints a chronologically ordered list of the report files and their content
         debug               fetches a script from the key-value server and executes its tasks one by one via user interaction
 
@@ -291,10 +285,10 @@ def main(args: Optional[List[str]] = None) -> None:
     show_parser.add_argument("key", nargs="?", default="script", help="the script's key, defaults to 'script'")
     show_parser.set_defaults(command=show)
 
-    run_parser = subparsers.add_parser("run", description="Fetches a script from the key-value server and executes its tasks in order. On each success, a report file is created, which serves as an 'idempotence' marker not to run the task again. On failure, the whole loop stops.",
-                                       help="fetches a script from the key-value server and executes its tasks in order")
-    run_parser.add_argument("key", nargs="?", default="script", help='key of the script to look for, defaults to "script"')
-    run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help=f"maximum number of attempts before a task is actually considered a failure, defaults to {ATTEMPTS_DEFAULT}", metavar="<value>")
+    run_parser = subparsers.add_parser("run", description="Fetches a script from the key-value server and executes its tasks. Execution reports are written after each task. On failure, the output is displayed and the loop stops. Should you run the script again, successful tasks will be skipped.",
+                                       help="fetches a script from the key-value server and executes its tasks")
+    run_parser.add_argument("key", nargs="?", default="script", help="the script's key, defaults to 'script'")
+    run_parser.add_argument("--attempts", type=int, default=ATTEMPTS_DEFAULT, help=f"maximum number of attempts before reporting a failure, defaults to {ATTEMPTS_DEFAULT}", metavar="<value>")
     run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help=f"delay in seconds between two attempts, defaults to {PAUSE_DEFAULT}", metavar="<value>")
     run_parser.set_defaults(command=run)
 
