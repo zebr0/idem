@@ -119,12 +119,12 @@ def execute(command: str, attempts: int = ATTEMPTS_DEFAULT, pause: float = PAUSE
 def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
     """
     Fetches a key from the key-value server and writes its value into a target file.
-    Errors will be returned as a list of strings as part of the execution report.
+    Errors will be returned as a list of strings in an execution report.
 
-    :param client: zebr0 Client instance to the key-value server
+    :param client: zebr0 Client to the key-value server
     :param key: key to look for
     :param target: path to the target file
-    :return: an execution report as a dictionary
+    :return: an execution report
     """
 
     value = client.get(key, strip=False)
@@ -134,7 +134,7 @@ def fetch_to_disk(client: zebr0.Client, key: str, target: str) -> dict:
     else:
         try:
             target_path = Path(target)
-            target_path.parent.mkdir(parents=True, exist_ok=True)  # make sure the parent directories exist
+            target_path.parent.mkdir(parents=True, exist_ok=True)  # make sure the parent directory exists
             target_path.write_text(value, encoding=zebr0.ENCODING)
 
             status = Status.SUCCESS
