@@ -41,7 +41,7 @@ def test_ok(server, tmp_path, capsys, monkeypatch):
     report2_date = format_mtime(reports_path.joinpath("7ab9b46af97310796a1918713345d986"))
 
     zebr0_script.main(["-r", str(reports_path), "log"])
-    assert capsys.readouterr().out == "a885d7b3306acd60490834d5fdd234b5 " + report1_date + ' {\n  "command": "echo one",\n  "status": "success",\n  "output": [\n    "one"\n  ]\n}\n7ab9b46af97310796a1918713345d986 ' + report2_date + ' {\n  "command": "sleep 1 && echo two",\n  "status": "success",\n  "output": [\n    "two"\n  ]\n}\n'
+    assert capsys.readouterr().out == "a885d7b3306acd60490834d5fdd234b5 " + report1_date + ' {"command": "echo one", "status": "success"}\n7ab9b46af97310796a1918713345d986 ' + report2_date + ' {"command": "sleep 1 && echo two", "status": "success"}\n'
 
     zebr0_script.main(["-f", str(configuration_file), "-r", str(reports_path), "show"])
     assert capsys.readouterr().out == 'success: "echo one"\nsuccess: "sleep 1 && echo two"\n'

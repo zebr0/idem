@@ -185,18 +185,24 @@ def run(url: str, levels: Optional[List[str]], cache: int, configuration_file: P
 
 def log(reports_path: Path, **_) -> None:
     """
-    Prints a chronologically ordered list of the report files and their content.
+    Displays a time-ordered list of the report files and their content (minus the output).
 
     :param reports_path: Path to the reports' directory
     """
 
+    if not reports_path.exists():
+        return
+
     def get_mtime(path):
         return path.stat().st_mtime
 
-    if reports_path.exists():
-        for file in filter(lambda p: p.is_file(), sorted(reports_path.iterdir(), key=get_mtime)):
-            strformat = datetime.datetime.fromtimestamp(get_mtime(file)).strftime("%c")
-            print(file.name, strformat, file.read_text(encoding=zebr0.ENCODING).strip())
+    for file in filter(lambda p: p.is_file(), sorted(reports_path.iterdir(), key=get_mtime)):
+        mtime = datetime.datetime.fromtimestamp(get_mtime(file)).strftime("%c")
+
+        content = json.loads(file.read_text(encoding=zebr0.ENCODING))
+        content.pop(OUTPUT)
+
+        print(file.name, mtime, json.dumps(content))
 
 
 def debug(url: str, levels: Optional[List[str]], cache: int, configuration_file: Path, reports_path: Path, key: str, **_) -> None:
@@ -259,7 +265,7 @@ def main(args: Optional[List[str]] = None) -> None:
       {show,run,log,debug}
         show                fetches a script from the key-value server and displays its tasks along with their current status
         run                 fetches a script from the key-value server and executes its tasks
-        log                 prints a chronologically ordered list of the report files and their content
+        log                 displays a time-ordered list of the report files and their content (minus the output)
         debug               fetches a script from the key-value server and executes its tasks one by one via user interaction
 
     optional arguments:
@@ -292,8 +298,8 @@ def main(args: Optional[List[str]] = None) -> None:
     run_parser.add_argument("--pause", type=float, default=PAUSE_DEFAULT, help=f"delay in seconds between two attempts, defaults to {PAUSE_DEFAULT}", metavar="<value>")
     run_parser.set_defaults(command=run)
 
-    log_parser = subparsers.add_parser("log", description="Prints a chronologically ordered list of the report files and their content.",
-                                       help="prints a chronologically ordered list of the report files and their content")
+    log_parser = subparsers.add_parser("log", description="Displays a time-ordered list of the report files and their content (minus the output).",
+                                       help="displays a time-ordered list of the report files and their content (minus the output)")
     log_parser.set_defaults(command=log)
 
     debug_parser = subparsers.add_parser("debug", description="Fetches a script from the key-value server and executes its tasks one by one via user interaction. Useful for debugging scripts in test environment.",
