@@ -266,11 +266,11 @@ def main(args: Optional[List[str]] = None) -> None:
       -f <path>, --configuration-file <path>
                             path to the configuration file, defaults to /etc/zebr0.conf for a system-wide configuration
       -r <path>, --reports-path <path>
-                            path to the reports' directory
+                            path to the reports' directory, defaults to /var/zebr0/script/reports
     """
 
     argparser = zebr0.build_argument_parser(description="Minimalist local deployment based on zebr0 key-value system.")
-    argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="path to the reports' directory", metavar="<path>")
+    argparser.add_argument("-r", "--reports-path", type=Path, default=Path("/var/zebr0/script/reports"), help="path to the reports' directory, defaults to /var/zebr0/script/reports", metavar="<path>")
     subparsers = argparser.add_subparsers()
 
     show_parser = subparsers.add_parser("show", description="Fetches a script from the key-value server and displays its tasks along with their current status.",
