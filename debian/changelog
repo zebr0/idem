@@ -1,3 +1,11 @@
+zebr0-script (0.8.0) focal; urgency=medium
+
+  * live output is now replaced by a progress bar
+  * execution reports are now produced on errors too, and status is included in the report
+  * global code cleaning
+
+ -- Thomas JOUANNOT (Mazerty) <mazerty@gmail.com>  Sat, 09 Jan 2021 11:00:00 +0100
+
 zebr0-script (0.7.0) focal; urgency=medium
 
   * now uses the reworked version of zebr0
